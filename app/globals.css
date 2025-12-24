@@ -1,0 +1,23 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+
+@theme {
+  --color-background: #F7F7F8;
+  --color-foreground: #343541;
+  --color-sidebar-bg: #FFFFFF;
+  --color-sidebar-border: #ECECF1;
+  --color-primary: #4361EE;
+  --color-primary-foreground: #FFFFFF;
+}
+
+:root {
+  --background: #F7F7F8;
+  --foreground: #343541;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
