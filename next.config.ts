@@ -7,6 +7,9 @@ const apiBaseUrl = (
 ).replace(/\/+$/, "");
 
 const nextConfig: NextConfig = {
+  experimental: {
+    proxyTimeout: 120000,
+  },
   rewrites: async () => {
     return [
       {
