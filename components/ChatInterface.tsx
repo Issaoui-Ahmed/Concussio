@@ -16,7 +16,23 @@ export function ChatInterface() {
     const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
     const [input, setInput] = useState("");
     const [isLoading, setIsLoading] = useState(false);
+    const [elapsedTime, setElapsedTime] = useState(0);
     const bottomRef = useRef<HTMLDivElement>(null);
+
+    // Timer for loading state
+    useEffect(() => {
+        let interval: NodeJS.Timeout;
+        if (isLoading) {
+            const startTime = Date.now();
+            setElapsedTime(0);
+            interval = setInterval(() => {
+                setElapsedTime((Date.now() - startTime) / 1000);
+            }, 100);
+        }
+        return () => {
+            if (interval) clearInterval(interval);
+        };
+    }, [isLoading]);
 
     // Initial Load from LocalStorage
     useEffect(() => {
@@ -182,8 +198,10 @@ export function ChatInterface() {
                                             <div className="w-8 h-8 rounded-sm bg-[#4361EE]/10 flex items-center justify-center shrink-0">
                                                 <div className="w-2 h-2 bg-[#4361EE] rounded-full animate-bounce" />
                                             </div>
-                                            <div className="space-y-2 flex-1 max-w-[200px]">
-                                                <div className="h-4 bg-gray-200 rounded w-full animate-pulse"></div>
+                                            <div className="space-y-2 flex-1 max-w-[200px] flex items-center">
+                                                <span className="text-sm text-gray-500 font-medium tracking-wide">
+                                                    Thinking... {elapsedTime.toFixed(1)}s
+                                                </span>
                                             </div>
                                         </div>
                                     </div>

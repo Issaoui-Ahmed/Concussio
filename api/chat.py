@@ -49,7 +49,7 @@ def chat_endpoint(request: ChatRequest):
                 answer = generate_answer(prompt, tools=True, papers=True)
             else:
                 prompt = build_patient_prompt(user_text)
-                answer = generate_answer(prompt, tools=False, papers=True)
+                answer = generate_answer(prompt, tools=True, papers=False)
             print(answer)
             return {"answer": answer}
         else:
@@ -62,7 +62,7 @@ def chat_endpoint(request: ChatRequest):
                 f"User: {user_text}\n"
                 "Assistant:"
             )
-            answer = generate_answer(prompt)
+            answer = generate_answer(prompt, tools=True, papers=True)
             return {"answer": answer}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
