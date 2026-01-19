@@ -7,9 +7,8 @@ import sys
 # Add the parent directory to sys.path to import modules from root
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from core.chatbot import ChatSession
 from core.generator import generate_answer
-from core.prompts import build_generator_prompt, build_patient_prompt, build_doctor_prompt
+from core.prompts import build_generator_prompt
 
 app = FastAPI()
 
@@ -44,12 +43,12 @@ def chat_endpoint(request: ChatRequest):
         started = len(history) > 1
         
         if not started:
-            if request.user_type == "doctor":
-                prompt = build_doctor_prompt(user_text)
-                answer = generate_answer(prompt, tools=True, papers=True)
-            else:
-                prompt = build_patient_prompt(user_text)
-                answer = generate_answer(prompt, tools=True, papers=False)
+            user_type = request.user_type or "patient"
+            prompt = build_generator_prompt(user_text, user_type)
+            
+            # The unified prompt structure requests literature info for all users, 
+            # so we enable papers=True to ensure the model has access to the vector store.
+            answer = generate_answer(prompt, tools=True, papers=True)
             print(answer)
             return {"answer": answer}
         else:

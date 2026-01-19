@@ -1,4 +1,5 @@
 import React from "react";
+import Image from "next/image";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { User, Bot } from "lucide-react";
@@ -28,14 +29,19 @@ export function ChatMessage({ role, content }: ChatMessageProps) {
             <div className="flex gap-4">
                 <div
                     className={cn(
-                        "w-8 h-8 rounded-sm flex items-center justify-center shrink-0",
-                        isUser ? "bg-[#ECECF1]" : "bg-[#4361EE]" // User gray, Bot Blue
+                        "w-8 h-8 rounded-sm flex items-center justify-center shrink-0 overflow-hidden relative",
+                        isUser ? "bg-[#ECECF1]" : "bg-transparent" // User gray, Bot transparent for logo
                     )}
                 >
                     {isUser ? (
                         <User className="text-gray-500 w-5 h-5" />
                     ) : (
-                        <div className="text-white font-bold text-xs">AI+</div>
+                        <Image
+                            src="/logo-icon-v2.png"
+                            alt="AI"
+                            fill
+                            className="object-contain"
+                        />
                     )}
                 </div>
 

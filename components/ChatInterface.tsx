@@ -2,6 +2,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
+import Image from "next/image";
 import { ChatMessage } from "./ChatMessage";
 import { Sidebar, Session } from "./Sidebar";
 import { Send, Sparkles } from "lucide-react";
@@ -89,11 +90,12 @@ export function ChatInterface() {
         setCurrentSessionId(id);
     };
 
-    const [userType, setUserType] = useState<"patient" | "doctor">("patient");
+    const [userType, setUserType] = useState<string>("Healthcare Professional");
 
     // ... existing code ...
 
     const handleSubmit = async (e: React.FormEvent) => {
+        // ... functionality remains same ...
         e.preventDefault();
         if (!input.trim() || isLoading) return;
 
@@ -162,7 +164,7 @@ export function ChatInterface() {
     };
 
     return (
-        <div className="flex h-screen bg-[#F7F7F9] text-gray-800 font-sans overflow-hidden">
+        <div className="flex h-full bg-[#F7F7F9] text-gray-800 font-sans overflow-hidden">
             {/* Sidebar */}
             <Sidebar
                 sessions={sessions}
@@ -180,8 +182,15 @@ export function ChatInterface() {
                     <div className="flex flex-col min-h-full pb-36 pt-10">
                         {(!currentSessionId || messages.length === 0) ? (
                             <div className="flex-1 flex flex-col items-center justify-center text-center px-4 -mt-20">
-                                <div className="bg-white p-4 rounded-xl shadow-sm mb-6">
-                                    <Sparkles className="w-8 h-8 text-[#4361EE]" />
+                                <div className="bg-white p-4 rounded-xl shadow-sm mb-6 flex items-center justify-center">
+                                    <div className="relative w-12 h-12">
+                                        <Image
+                                            src="/logo-icon-v2.png"
+                                            alt="Logo"
+                                            fill
+                                            className="object-contain"
+                                        />
+                                    </div>
                                 </div>
                                 <h1 className="text-3xl font-bold mb-2 text-gray-800">ConcussCare</h1>
                                 <p className="text-gray-500 max-w-md">Your trusted assistant for concussion healthcare guidelines and patient support.</p>
@@ -195,8 +204,8 @@ export function ChatInterface() {
                                 {isLoading && (
                                     <div className="w-full">
                                         <div className="flex gap-4 p-4 rounded-xl bg-white/50 border border-gray-100">
-                                            <div className="w-8 h-8 rounded-sm bg-[#4361EE]/10 flex items-center justify-center shrink-0">
-                                                <div className="w-2 h-2 bg-[#4361EE] rounded-full animate-bounce" />
+                                            <div className="w-8 h-8 rounded-sm bg-[#00417d]/10 flex items-center justify-center shrink-0">
+                                                <div className="w-2 h-2 bg-[#00417d] rounded-full animate-bounce" />
                                             </div>
                                             <div className="space-y-2 flex-1 max-w-[200px] flex items-center">
                                                 <span className="text-sm text-gray-500 font-medium tracking-wide">
@@ -215,33 +224,23 @@ export function ChatInterface() {
                 {/* Input Area */}
                 <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-[#F7F7F9] via-[#F7F7F9] to-transparent pt-10 pb-6 px-4">
                     <div className="max-w-3xl mx-auto flex gap-4 items-end">
-                        {/* User Type Toggle */}
+                        {/* User Type Dropdown */}
                         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-1 flex shrink-0 mb-1">
-                            <button
-                                type="button"
-                                onClick={() => setUserType("patient")}
+                            <select
+                                value={userType}
+                                onChange={(e) => setUserType(e.target.value)}
                                 disabled={messages.length > 0}
-                                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${userType === "patient"
-                                    ? "bg-[#4361EE] text-white"
-                                    : "text-gray-500 hover:bg-gray-50 disabled:opacity-50"
-                                    }`}
+                                className="px-3 py-2 rounded-lg text-sm font-medium bg-transparent border-none focus:ring-0 text-gray-700 cursor-pointer disabled:opacity-50"
                             >
-                                Patient
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setUserType("doctor")}
-                                disabled={messages.length > 0}
-                                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${userType === "doctor"
-                                    ? "bg-[#4361EE] text-white"
-                                    : "text-gray-500 hover:bg-gray-50 disabled:opacity-50"
-                                    }`}
-                            >
-                                Doctor
-                            </button>
+                                <option value="Healthcare Professional">Healthcare Professional</option>
+                                <option value="Parent or Caregiver">Parent or Caregiver</option>
+                                <option value="Youth">Youth</option>
+                                <option value="Teacher">Teacher</option>
+                                <option value="Coach">Coach</option>
+                            </select>
                         </div>
 
-                        <form onSubmit={handleSubmit} className="flex-1 relative bg-white rounded-xl shadow-[0_0_20px_rgba(0,0,0,0.05)] border border-gray-100 p-2 focus-within:shadow-[0_0_20px_rgba(67,97,238,0.1)] focus-within:border-[#4361EE]/30 transition-all">
+                        <form onSubmit={handleSubmit} className="flex-1 relative bg-white rounded-xl shadow-[0_0_20px_rgba(0,0,0,0.05)] border border-gray-100 p-2 focus-within:shadow-[0_0_20px_rgba(0,65,125,0.1)] focus-within:border-[#00417d]/30 transition-all">
                             <input
                                 type="text"
                                 value={input}
@@ -254,7 +253,7 @@ export function ChatInterface() {
                             <button
                                 type="submit"
                                 disabled={isLoading || !input.trim()}
-                                className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-[#4361EE] text-white rounded-lg hover:bg-[#3651D4] disabled:opacity-50 disabled:hover:bg-[#4361EE] transition-colors"
+                                className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-[#00417d] text-white rounded-lg hover:bg-[#002a52] disabled:opacity-50 disabled:hover:bg-[#00417d] transition-colors"
                             >
                                 <Send className="w-4 h-4" />
                             </button>

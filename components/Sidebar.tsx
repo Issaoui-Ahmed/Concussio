@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Image from "next/image";
 import { Plus, MessageSquare, Trash2, Edit2 } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -29,14 +30,12 @@ export function Sidebar({ sessions, currentSessionId, onSelectSession, onNewChat
         <div className="flex flex-col h-full w-[260px] bg-white border-r border-[#ECECF1] flex-shrink-0">
             {/* Header */}
             <div className="p-4 pt-6">
-                <div className="flex items-center justify-between mb-6">
-                    <h1 className="text-xl font-bold tracking-tight text-gray-900">ConcussCare</h1>
-                </div>
+
 
                 <div className="flex gap-2">
                     <button
                         onClick={onNewChat}
-                        className="flex-1 flex items-center justify-center gap-2 bg-[#4361EE] hover:bg-[#3651D4] text-white rounded-full py-3 px-4 transition-colors shadow-sm text-sm font-medium"
+                        className="flex-1 flex items-center justify-center gap-2 bg-[#00417d] hover:bg-[#002a52] text-white rounded-full py-3 px-4 transition-colors shadow-sm text-sm font-medium"
                     >
                         <Plus className="w-5 h-5" />
                         New chat
@@ -63,14 +62,14 @@ export function Sidebar({ sessions, currentSessionId, onSelectSession, onNewChat
                                     onClick={() => onSelectSession(session.id)}
                                     className={cn(
                                         "group w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm text-gray-700 hover:bg-gray-100 transition-colors text-left relative",
-                                        session.id === currentSessionId && "bg-[#EEF2FF] text-[#4361EE]"
+                                        session.id === currentSessionId && "bg-[#e6efff] text-[#00417d]"
                                     )}
                                 >
-                                    <MessageSquare className={cn("w-4 h-4 text-gray-400", session.id === currentSessionId && "text-[#4361EE]")} />
+                                    <MessageSquare className={cn("w-4 h-4 text-gray-400", session.id === currentSessionId && "text-[#00417d]")} />
                                     <span className="truncate flex-1">{session.title}</span>
 
                                     {session.id === currentSessionId && (
-                                        <div className="absolute right-2 flex items-center gap-1 bg-[#EEF2FF] pl-2">
+                                        <div className="absolute right-2 flex items-center gap-1 bg-[#e6efff] pl-2">
                                             {/* <Edit2 className="w-3 h-3 text-gray-500 hover:text-gray-700 cursor-pointer" /> */}
                                             <Trash2
                                                 onClick={(e) => onDeleteSession(e, session.id)}
