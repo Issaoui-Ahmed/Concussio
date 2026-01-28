@@ -7,7 +7,7 @@ import sys
 # Add the parent directory to sys.path to import modules from root
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from core.generator import generate_answer
+from core.generator import generate_answer, client
 from core.prompts import build_generator_prompt
 
 app = FastAPI()
@@ -65,3 +65,7 @@ def chat_endpoint(request: ChatRequest):
             return {"answer": answer}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+
+

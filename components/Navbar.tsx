@@ -10,6 +10,7 @@ export function Navbar() {
 
     const navItems = [
         { name: "Chatbot", href: "/" },
+        { name: "Batch Answers", href: "/batch" },
         { name: "About us", href: "/about" },
         { name: "Source of information", href: "/sources" },
     ];
