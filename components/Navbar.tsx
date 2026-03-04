@@ -7,13 +7,19 @@ import { cn } from "@/lib/utils";
 
 export function Navbar() {
     const pathname = usePathname();
+    const isAdminRoute = pathname.startsWith("/admin");
 
-    const navItems = [
-        { name: "Chatbot", href: "/" },
-        { name: "Batch Answers", href: "/batch" },
-        { name: "About us", href: "/about" },
-        { name: "Source of information", href: "/sources" },
-    ];
+    const navItems = isAdminRoute
+        ? [
+            { name: "Chatbot", href: "/admin" },
+            { name: "Batch Answers", href: "/admin/batch" },
+            { name: "Scraping", href: "/admin/scraping" },
+        ]
+        : [
+            { name: "Chatbot", href: "/" },
+            { name: "About us", href: "/about" },
+            { name: "Source of information", href: "/sources" },
+        ];
 
     return (
         <nav className="bg-white border-b border-[#ECECF1] h-16 flex items-center px-4 md:px-6 shrink-0 z-50">
@@ -31,7 +37,11 @@ export function Navbar() {
 
             <div className="flex items-center gap-1 sm:gap-4 overflow-x-auto">
                 {navItems.map((item) => {
-                    const isActive = pathname === item.href;
+                    const isActive = item.href === "/"
+                        ? pathname === "/"
+                        : item.href === "/admin"
+                            ? pathname === "/admin"
+                            : pathname === item.href || pathname.startsWith(`${item.href}/`);
                     return (
                         <Link
                             key={item.href}

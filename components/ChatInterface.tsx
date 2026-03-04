@@ -1,16 +1,48 @@
 
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import Image from "next/image";
 import { ChatMessage } from "./ChatMessage";
 import { Sidebar, Session } from "./Sidebar";
-import { Send, Sparkles } from "lucide-react";
+import { Send } from "lucide-react";
+
+type FollowUpsStatus = "idle" | "loading" | "ready" | "error";
 
 interface Message {
+    id?: string;
     role: "user" | "assistant";
     content: string;
+    followUps?: string[];
+    followUpsStatus?: FollowUpsStatus;
 }
+
+const createMessageId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+
+const DEFAULT_FOLLOW_UPS = [
+    "Can you explain that in simpler terms?",
+    "What should I do first?",
+    "What warning signs mean I should seek urgent care?",
+];
+
+const normalizeFollowUps = (items: string[]) => {
+    const deduped = Array.from(
+        new Set(
+            items
+                .map(item => item.trim())
+                .filter(item => item.length > 0)
+        )
+    );
+
+    for (const fallback of DEFAULT_FOLLOW_UPS) {
+        if (deduped.length >= 3) break;
+        if (!deduped.includes(fallback)) {
+            deduped.push(fallback);
+        }
+    }
+
+    return deduped.slice(0, 3);
+};
 
 export function ChatInterface() {
     const [sessions, setSessions] = useState<Session[]>([]);
@@ -60,7 +92,10 @@ export function ChatInterface() {
 
     // Scroll to bottom when messages change
     const currentSession = sessions.find(s => s.id === currentSessionId);
-    const messages = currentSession ? currentSession.messages : [];
+    const messages: Message[] = useMemo(
+        () => (currentSession ? (currentSession.messages as Message[]) : []),
+        [currentSession]
+    );
 
     useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -92,43 +127,118 @@ export function ChatInterface() {
 
     const [userType, setUserType] = useState<string>("Healthcare Professional");
 
-    // ... existing code ...
+    const updateFollowUpsForMessage = (
+        sessionId: string,
+        messageId: string,
+        followUps: string[],
+        followUpsStatus: FollowUpsStatus
+    ) => {
+        setSessions(prev =>
+            prev.map(s => {
+                if (s.id !== sessionId) return s;
+                return {
+                    ...s,
+                    messages: s.messages.map((message) => {
+                        const typedMessage = message as Message;
+                        if (typedMessage.id !== messageId) return typedMessage;
+                        return {
+                            ...typedMessage,
+                            followUps,
+                            followUpsStatus,
+                        };
+                    }),
+                };
+            })
+        );
+    };
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        // ... functionality remains same ...
-        e.preventDefault();
-        if (!input.trim() || isLoading) return;
+    const requestFollowUps = async (params: {
+        sessionId: string;
+        assistantMessageId: string;
+        userMessage: string;
+        answer: string;
+    }) => {
+        try {
+            const followUpResponse = await fetch("/api/followups", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    message: params.userMessage,
+                    answer: params.answer,
+                    user_type: userType,
+                }),
+            });
+
+            if (!followUpResponse.ok) {
+                throw new Error("Failed to fetch follow-up questions");
+            }
+
+            const followUpData = await followUpResponse.json();
+            const followUps = Array.isArray(followUpData.follow_ups)
+                ? followUpData.follow_ups
+                    .filter((item: unknown): item is string => typeof item === "string" && item.trim().length > 0)
+                    .slice(0, 3)
+                : [];
+
+            updateFollowUpsForMessage(
+                params.sessionId,
+                params.assistantMessageId,
+                normalizeFollowUps(followUps),
+                "ready"
+            );
+        } catch (error) {
+            console.error(error);
+            updateFollowUpsForMessage(
+                params.sessionId,
+                params.assistantMessageId,
+                normalizeFollowUps([]),
+                "ready"
+            );
+        }
+    };
+
+    const sendMessage = async (rawText: string, source: "input" | "followup" = "input") => {
+        const trimmedInput = rawText.trim();
+        if (!trimmedInput || isLoading) return;
 
         let activeSessionId = currentSessionId;
         if (!activeSessionId) {
             activeSessionId = createNewSession();
         }
 
-        const userMessage: Message = { role: "user", content: input };
+        const userMessage: Message = {
+            id: createMessageId(),
+            role: "user",
+            content: trimmedInput,
+        };
 
-        // Optimistic Update
         setSessions(prev => prev.map(s => {
             if (s.id === activeSessionId) {
-                // If it's the first message, update title
-                const newTitle = s.messages.length === 0 ? input.slice(0, 30) + (input.length > 30 ? "..." : "") : s.title;
+                const newTitle =
+                    s.messages.length === 0
+                        ? trimmedInput.slice(0, 30) + (trimmedInput.length > 30 ? "..." : "")
+                        : s.title;
                 return { ...s, title: newTitle, messages: [...s.messages, userMessage] };
             }
             return s;
         }));
 
-        setInput("");
+        if (source === "input") {
+            setInput("");
+        }
         setIsLoading(true);
 
         try {
-            const currentHistory = sessions.find(s => s.id === activeSessionId)?.messages || [];
+            const currentHistory = (sessions.find(s => s.id === activeSessionId)?.messages || []) as Message[];
+            const historyPayload = [...currentHistory, userMessage].map(({ role, content }) => ({ role, content }));
 
             const response = await fetch("/api/chat", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     message: userMessage.content,
-                    history: [...currentHistory, userMessage],
-                    user_type: userType, // Pass user type
+                    history: historyPayload,
+                    user_type: userType,
                 }),
             });
 
@@ -138,9 +248,13 @@ export function ChatInterface() {
             }
 
             const data = await response.json();
+            const assistantMessageId = createMessageId();
             const assistantMessage: Message = {
+                id: assistantMessageId,
                 role: "assistant",
                 content: data.answer,
+                followUps: [],
+                followUpsStatus: "loading",
             };
 
             setSessions(prev => prev.map(s => {
@@ -150,17 +264,37 @@ export function ChatInterface() {
                 return s;
             }));
 
-        } catch (error: any) {
+            void requestFollowUps({
+                sessionId: activeSessionId,
+                assistantMessageId,
+                userMessage: userMessage.content,
+                answer: data.answer,
+            });
+        } catch (error: unknown) {
             console.error(error);
+            const errorMessage = error instanceof Error ? error.message : "Sorry, error occurred.";
+            const assistantErrorMessage: Message = {
+                id: createMessageId(),
+                role: "assistant",
+                content: errorMessage,
+                followUps: [],
+                followUpsStatus: "idle",
+            };
+
             setSessions(prev => prev.map(s => {
                 if (s.id === activeSessionId) {
-                    return { ...s, messages: [...s.messages, { role: "assistant", content: error.message || "Sorry, error occurred." }] };
+                    return { ...s, messages: [...s.messages, assistantErrorMessage] };
                 }
                 return s;
             }));
         } finally {
             setIsLoading(false);
         }
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        await sendMessage(input, "input");
     };
 
     return (
@@ -198,7 +332,15 @@ export function ChatInterface() {
                         ) : (
                             <div className="flex flex-col gap-6 w-full max-w-4xl mx-auto px-4">
                                 {messages.map((msg, idx) => (
-                                    <ChatMessage key={idx} role={msg.role} content={msg.content} />
+                                    <ChatMessage
+                                        key={msg.id ?? `${idx}-${msg.role}`}
+                                        role={msg.role}
+                                        content={msg.content}
+                                        followUps={msg.followUps}
+                                        followUpsStatus={msg.followUpsStatus}
+                                        onFollowUpClick={(question) => void sendMessage(question, "followup")}
+                                        followUpsDisabled={isLoading}
+                                    />
                                 ))}
 
                                 {isLoading && (

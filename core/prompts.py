@@ -1,12 +1,4 @@
 
-def build_domain_classifier_prompt(query, domain_prompt):
-    return f""" User query: {query}
-        selects exactly one domain from the list below that best matches the user's query. 
-        output a json with the domain number.\n\n"
-        "if the user's query does not match any of the domains, return -1 "
-        "Domains:\n"
-        "{domain_prompt}\n\n"
-        """    
 
 def build_generator_prompt(query, user_type):
     with open("all_rec_markdown.md", "r", encoding="utf-8") as f:
@@ -61,6 +53,14 @@ def build_generator_prompt(query, user_type):
 
     return f""" You are a helphul assistant. 
     A {user_type} asked you the following question: {query}
+
+    if the user asked a medical question that cannot be answered based on the living guidelines recommendations, say: "Your query cannot be answered through the living guideline recommendations"
+    if the user asked a non-medical question, say: "I can only answer medical questions related to concussion based on the living guideline recommendations"
+    if the user sent a chit-chat message like "thank you", "hi", "how are you?", "Nice weather today", answer concise and friendly, but do not provide any medical information. For example, if the user says "thank you", you can say "You`re welcome! If you have any questions about concussion, feel free to ask."
+    Safeguards:
+    - If the user’s query includes mention of self-harm, suicidal thoughts, suicide attempt, acute depressive episode, or mental health crisis, the response must instruct the health professional to direct the patient (or family) to seek immediate emergency care. The instruction must state that if the patient is experiencing a mental health, addictions, or substance use medical emergency, they should call 911 or go to the nearest hospital emergency department.
+
+
     Review the living guidelines recommendations and the vector stores you have access to. To formulte an answer.
     The response should be based only on the information I provide (the living guidelines recommendations), and the vector stores you have access to.
     {personalization}
@@ -75,11 +75,6 @@ Follow these rules:
 - When you reference recommendations, include their level of evidence if they have one. 
 - Everytime a tool is mentioned, include its link right after the mention. 
 - In the "Information From the Literature" section, stick to the APA 7 citation style.
-
-Safeguards:
-- If the user’s query includes mention of self-harm, suicidal thoughts, suicide attempt, acute depressive episode, or mental health crisis, the response must instruct the health professional to direct the patient (or family) to seek immediate emergency care. The instruction must state that if the patient is experiencing a mental health, addictions, or substance use medical emergency, they should call 911 or go to the nearest hospital emergency department.
-
-if the user`s query cannot be answered based on the living guidelines recommendations, say: "Your query cannot be answered through the living guideline recommendations"
 
 Living Guidelines Recommendations:"{recommendations_markdown}" 
     """    

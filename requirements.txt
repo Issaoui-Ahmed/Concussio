@@ -5,3 +5,5 @@ pydantic>=2.0.0
 # API
 fastapi
 uvicorn
+requests
+beautifulsoup4
