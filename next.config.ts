@@ -11,15 +11,16 @@ const nextConfig: NextConfig = {
     proxyTimeout: 120000,
   },
   rewrites: async () => {
-    return [
-      {
-        source: "/api/:path*",
-        destination:
-          process.env.NODE_ENV === "development"
-            ? `${apiBaseUrl}/api/:path*`
-            : "/api/",
-      },
-    ];
+    if (process.env.NODE_ENV === "development") {
+      return [
+        {
+          source: "/api/:path*",
+          destination: `${apiBaseUrl}/api/:path*`,
+        },
+      ];
+    }
+
+    return [];
   },
 };
 
