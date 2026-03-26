@@ -54,6 +54,8 @@ Create a `.env` file in the root directory and add your OpenAI API key. You can 
 
 ```env
 OPENAI_API_KEY=sk-your-api-key-here
+FUELIX_API_KEY=sk-your-fuelix-key-here
+FUELIX_API_BASE_URL=https://api.fuelix.ai/v1
 ```
 
 ### 3. Running Locally
@@ -62,7 +64,7 @@ To run the full application, you will need two terminal windows.
 
 **Terminal 1 (Backend - Port 8000):**
 ```bash
-uvicorn api.chat:app --reload --port 8000
+uvicorn api.main:app --port 8000 --env-file .env
 ```
 
 **Terminal 2 (Frontend - Port 3000):**
@@ -79,8 +81,15 @@ This project is optimized for deployment on **Vercel**.
 1.  Push your code to a GitHub repository.
 2.  Import the project into Vercel.
 3.  Vercel will automatically detect the **Next.js** framework and the **Python** API in the `api/` directory.
-4.  Add your `OPENAI_API_KEY` in the Vercel Project Settings > Environment Variables.
+4.  Add environment variables in Vercel Project Settings:
+    * `OPENAI_API_KEY`
+    * `FUELIX_API_KEY` (if using Fuel IX admin page)
+    * `FUELIX_API_BASE_URL` (optional, default is `https://api.fuelix.ai/v1`)
 5.  Deploy!
+
+Notes:
+* `api/main.py` is for local unified backend development.
+* In production, Vercel serves each `api/*.py` file as its own serverless endpoint (for example `/api/chat`, `/api/followups`, `/api/scraping`, `/api/fuelix/*`).
 
 ## 📜 License
 

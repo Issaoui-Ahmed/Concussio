@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
+import re
 import threading
 from typing import Dict, List, Optional
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 
 import requests
 from bs4 import BeautifulSoup
@@ -11,6 +13,8 @@ from bs4 import BeautifulSoup
 SECTION_INDEX_URL = "https://pedsconcussion.com/section/"
 TOOLS_RESOURCES_URL = "https://pedsconcussion.com/tools-resources/"
 HEADING_TAGS = ("h1", "h2", "h3", "h4", "h5", "h6")
+TOOL_PDF_CACHE_TTL_SECONDS = 6 * 60 * 60
+TOOL_PDF_EMPTY_CACHE_TTL_SECONDS = 15 * 60
 DEFAULT_HEADERS = {
     "User-Agent": (
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -18,6 +22,9 @@ DEFAULT_HEADERS = {
         "Chrome/122.0 Safari/537.36"
     )
 }
+
+_tool_pdf_cache_lock = threading.Lock()
+_tool_pdf_cache: Dict[str, Dict[str, object]] = {}
 
 
 def fetch_html(url: str, timeout: int = 20) -> str:
@@ -51,7 +58,7 @@ def _normalize_heading_text(text: str) -> str:
     return " ".join(text.strip().rstrip(":").split()).lower()
 
 
-def _find_living_guideline_heading(soup: BeautifulSoup):
+def _find_living_guideline_section_start(soup: BeautifulSoup):
     exact_target = _normalize_heading_text("Living Guideline Tools")
 
     for heading in soup.find_all(HEADING_TAGS):
@@ -64,7 +71,83 @@ def _find_living_guideline_heading(soup: BeautifulSoup):
         if "living guideline tools" in normalized:
             return heading
 
+    for node in soup.find_all(True):
+        if node.name in ("script", "style", "noscript"):
+            continue
+        normalized = _normalize_heading_text(node.get_text(" ", strip=True))
+        if not normalized:
+            continue
+        if normalized == exact_target or "living guideline tools" in normalized:
+            return node
+
     return None
+
+
+def _fallback_extract_living_guideline_tools(
+    soup: BeautifulSoup,
+    base_url: str,
+) -> List[Dict[str, str]]:
+    tools: List[Dict[str, str]] = []
+    seen_urls = set()
+
+    keywords = (
+        "concussion",
+        "tool",
+        "algorithm",
+        "protocol",
+        "diagnostic",
+        "school",
+        "return",
+        "recognition",
+        "assessment",
+        "checklist",
+        "letter",
+        "monitor",
+        "symptom",
+        "sport",
+        "activity",
+        "physical",
+        "acrm",
+        "pecarn",
+        "catch2",
+        "scat",
+        "scoat",
+    )
+
+    for anchor in soup.find_all("a", href=True):
+        href = (anchor.get("href") or "").strip()
+        if not href:
+            continue
+        url = urljoin(base_url, href)
+        if not _is_candidate_http_url(url):
+            continue
+        if url in seen_urls:
+            continue
+
+        title = anchor.get_text(" ", strip=True) or url
+        if len(title) < 6:
+            continue
+
+        haystack = f"{title} {url}".lower()
+        score = 0
+        if any(keyword in haystack for keyword in keywords):
+            score += 20
+        if "living guideline" in haystack:
+            score += 10
+        if _is_probable_pdf_url(url):
+            score += 12
+        if "/wp-content/uploads/" in url.lower():
+            score += 8
+        if "/tools-resources/" in url.lower() or "/publications/" in url.lower():
+            score -= 20
+
+        if score < 20:
+            continue
+
+        tools.append({"title": title, "url": url})
+        seen_urls.add(url)
+
+    return tools
 
 
 def extract_living_guideline_tools(
@@ -72,20 +155,12 @@ def extract_living_guideline_tools(
     base_url: str = TOOLS_RESOURCES_URL,
 ) -> List[Dict[str, str]]:
     soup = BeautifulSoup(html, "html.parser")
-    heading = _find_living_guideline_heading(soup)
-    if heading is None:
-        return []
-
     tools: List[Dict[str, str]] = []
     seen_urls = set()
 
-    for sibling in heading.next_siblings:
-        if not getattr(sibling, "name", None):
-            continue
-        if sibling.name in HEADING_TAGS:
-            break
-
-        for anchor in sibling.find_all("a", href=True):
+    start_node = _find_living_guideline_section_start(soup)
+    if start_node is not None:
+        for anchor in start_node.find_all("a", href=True):
             href = (anchor.get("href") or "").strip()
             if not href:
                 continue
@@ -98,7 +173,252 @@ def extract_living_guideline_tools(
             tools.append({"title": title, "url": url})
             seen_urls.add(url)
 
-    return tools
+        for sibling in start_node.next_siblings:
+            if not getattr(sibling, "name", None):
+                continue
+            if sibling.name in HEADING_TAGS:
+                break
+
+            for anchor in sibling.find_all("a", href=True):
+                href = (anchor.get("href") or "").strip()
+                if not href:
+                    continue
+
+                url = urljoin(base_url, href)
+                if url in seen_urls:
+                    continue
+
+                title = anchor.get_text(" ", strip=True) or url
+                tools.append({"title": title, "url": url})
+                seen_urls.add(url)
+
+    if tools:
+        return tools
+
+    return _fallback_extract_living_guideline_tools(soup, base_url)
+
+
+def _is_probable_pdf_url(url: str) -> bool:
+    parsed = urlparse(url)
+    path = (parsed.path or "").lower()
+    return path.endswith(".pdf")
+
+
+def _is_candidate_http_url(url: str) -> bool:
+    parsed = urlparse(url)
+    return parsed.scheme in ("http", "https") and bool(parsed.netloc)
+
+
+def _normalize_cache_key(url: str) -> str:
+    return url.strip()
+
+
+def _get_cached_pdf_urls(url: str) -> Optional[List[str]]:
+    key = _normalize_cache_key(url)
+    if not key:
+        return None
+    now = datetime.now(timezone.utc)
+    with _tool_pdf_cache_lock:
+        entry = _tool_pdf_cache.get(key)
+        if not entry:
+            return None
+        fetched_at = entry.get("fetched_at")
+        pdf_urls = entry.get("pdf_urls")
+        if not isinstance(fetched_at, datetime) or not isinstance(pdf_urls, list):
+            return None
+        ttl = TOOL_PDF_CACHE_TTL_SECONDS if pdf_urls else TOOL_PDF_EMPTY_CACHE_TTL_SECONDS
+        if (now - fetched_at).total_seconds() > ttl:
+            return None
+        return [url for url in pdf_urls if isinstance(url, str)]
+
+
+def _set_cached_pdf_urls(url: str, pdf_urls: List[str]) -> None:
+    key = _normalize_cache_key(url)
+    if not key:
+        return
+    cleaned = [value for value in pdf_urls if isinstance(value, str) and value]
+    with _tool_pdf_cache_lock:
+        _tool_pdf_cache[key] = {
+            "fetched_at": datetime.now(timezone.utc),
+            "pdf_urls": cleaned,
+        }
+
+
+def _keyword_tokens(value: str) -> List[str]:
+    parts = re.split(r"[^a-z0-9]+", value.lower())
+    return [part for part in parts if len(part) >= 4]
+
+
+def _pdf_relevance_score(tool_title: str, pdf_url: str) -> int:
+    tokens = _keyword_tokens(tool_title)
+    if not tokens:
+        return 0
+    haystack = pdf_url.lower()
+    score = 0
+    for token in tokens:
+        if token in haystack:
+            score += 1
+    return score
+
+
+def _collect_candidate_links(html: str, base_url: str) -> List[str]:
+    soup = BeautifulSoup(html, "html.parser")
+    candidates: List[tuple[int, int, str]] = []
+    seen = set()
+    ordinal = 0
+
+    for anchor in soup.find_all("a", href=True):
+        href = (anchor.get("href") or "").strip()
+        if not href:
+            continue
+        url = urljoin(base_url, href)
+        if not _is_candidate_http_url(url):
+            continue
+        if url in seen:
+            continue
+        seen.add(url)
+
+        combined_text = " ".join(
+            [
+                anchor.get_text(" ", strip=True),
+                (anchor.get("title") or "").strip(),
+                (anchor.get("aria-label") or "").strip(),
+            ]
+        ).lower()
+
+        score = 0
+        if _is_probable_pdf_url(url):
+            score += 100
+        if "pdf" in combined_text:
+            score += 40
+        if "download" in combined_text:
+            score += 30
+        if "print" in combined_text:
+            score += 10
+
+        candidates.append((score, ordinal, url))
+        ordinal += 1
+
+    candidates.sort(key=lambda row: (-row[0], row[1]))
+    return [url for _, _, url in candidates]
+
+
+def _probe_url(url: str, timeout: int = 20) -> tuple[str, str, bool]:
+    response = requests.get(
+        url,
+        headers=DEFAULT_HEADERS,
+        timeout=timeout,
+        allow_redirects=True,
+        stream=True,
+    )
+    response.raise_for_status()
+    final_url = response.url or url
+    content_type = (response.headers.get("Content-Type") or "").lower()
+    first_chunk = b""
+    try:
+        for chunk in response.iter_content(chunk_size=16):
+            if chunk:
+                first_chunk = chunk
+                break
+    finally:
+        response.close()
+
+    is_pdf = (
+        _is_probable_pdf_url(final_url)
+        or "application/pdf" in content_type
+        or first_chunk.startswith(b"%PDF-")
+    )
+    return final_url, content_type, is_pdf
+
+
+def _fetch_html_page(url: str, timeout: int = 20) -> str:
+    response = requests.get(url, headers=DEFAULT_HEADERS, timeout=timeout, allow_redirects=True)
+    response.raise_for_status()
+    return response.text
+
+
+def resolve_tool_pdf_links(
+    tool_url: str,
+    *,
+    max_hops: int = 2,
+    max_candidates_per_page: int = 25,
+) -> List[str]:
+    if not tool_url or not _is_candidate_http_url(tool_url):
+        return []
+    if _is_probable_pdf_url(tool_url):
+        return [tool_url]
+
+    queue: List[tuple[str, int]] = [(tool_url, 0)]
+    visited = set()
+    found_pdf_urls: List[str] = []
+    seen_pdf_urls = set()
+
+    while queue:
+        current_url, depth = queue.pop(0)
+        if current_url in visited:
+            continue
+        visited.add(current_url)
+
+        try:
+            final_url, content_type, is_pdf = _probe_url(current_url)
+        except Exception:
+            if _is_probable_pdf_url(current_url) and current_url not in seen_pdf_urls:
+                seen_pdf_urls.add(current_url)
+                found_pdf_urls.append(current_url)
+            continue
+
+        if is_pdf:
+            if final_url not in seen_pdf_urls:
+                seen_pdf_urls.add(final_url)
+                found_pdf_urls.append(final_url)
+            continue
+
+        if depth >= max_hops:
+            continue
+
+        should_parse_html = "text/html" in content_type or "application/xhtml+xml" in content_type or not content_type
+        if not should_parse_html:
+            continue
+
+        try:
+            page_html = _fetch_html_page(final_url)
+        except Exception:
+            continue
+
+        links = _collect_candidate_links(page_html, base_url=final_url)
+        for next_url in links[:max_candidates_per_page]:
+            if next_url not in visited:
+                queue.append((next_url, depth + 1))
+
+    return found_pdf_urls
+
+
+def enrich_living_guideline_tool(tool: Dict[str, str]) -> Dict[str, object]:
+    title = tool.get("title", "")
+    url = tool.get("url", "")
+    cached_pdf_urls = _get_cached_pdf_urls(url)
+    if cached_pdf_urls is not None:
+        pdf_urls = cached_pdf_urls
+    else:
+        # Fast path first: shallow crawl with fewer candidates.
+        pdf_urls = resolve_tool_pdf_links(url, max_hops=1, max_candidates_per_page=12)
+        # Fallback path only when needed.
+        if not pdf_urls:
+            pdf_urls = resolve_tool_pdf_links(url, max_hops=2, max_candidates_per_page=20)
+        _set_cached_pdf_urls(url, pdf_urls)
+
+    if len(pdf_urls) > 1:
+        pdf_urls = sorted(
+            pdf_urls,
+            key=lambda candidate: _pdf_relevance_score(title, candidate),
+            reverse=True,
+        )
+    return {
+        "title": title,
+        "url": url,
+        "pdf_url": pdf_urls[0] if pdf_urls else None,
+        "pdf_urls": pdf_urls,
+    }
 
 
 def _has_classes(tag, *needed: str) -> bool:
@@ -214,22 +534,40 @@ def scrape_all_domain_recommendations(
     index_html = fetch_html(section_index_url)
     section_links = extract_section_links(index_html)
 
-    merged: Dict[str, Dict[str, str]] = {}
-    for link in section_links:
+    def scrape_single_section(link: Dict[str, str]) -> Dict[str, Dict[str, str]]:
         section_url = link.get("url")
         section_title = link.get("title", "")
         if not section_url:
-            continue
+            return {}
 
         page_html = fetch_html(section_url)
-        recommendations = extract_domain_recommendations(
+        return extract_domain_recommendations(
             html=page_html,
             section_title=section_title,
             section_url=section_url,
         )
 
+    ordered_section_payloads: List[Optional[Dict[str, Dict[str, str]]]] = [None] * len(section_links)
+    worker_count = min(6, max(1, len(section_links)))
+    with ThreadPoolExecutor(max_workers=worker_count) as executor:
+        future_to_index = {
+            executor.submit(scrape_single_section, link): index
+            for index, link in enumerate(section_links)
+        }
+        for future in as_completed(future_to_index):
+            index = future_to_index[future]
+            try:
+                ordered_section_payloads[index] = future.result()
+            except Exception:
+                ordered_section_payloads[index] = {}
+
+    merged: Dict[str, Dict[str, str]] = {}
+    for recommendations in ordered_section_payloads:
+        if not recommendations:
+            continue
         for domain_name, payload in recommendations.items():
             if domain_name in merged and merged[domain_name] != payload:
+                section_url = payload.get("section_url", "")
                 merged[f"{domain_name} [{section_url}]"] = payload
             else:
                 merged[domain_name] = payload
@@ -239,9 +577,34 @@ def scrape_all_domain_recommendations(
 
 def scrape_living_guideline_tools(
     tools_resources_url: str = TOOLS_RESOURCES_URL,
-) -> List[Dict[str, str]]:
+) -> List[Dict[str, object]]:
     page_html = fetch_html(tools_resources_url)
-    return extract_living_guideline_tools(page_html, base_url=tools_resources_url)
+    tools = extract_living_guideline_tools(page_html, base_url=tools_resources_url)
+
+    if not tools:
+        return []
+
+    enriched: List[Optional[Dict[str, object]]] = [None] * len(tools)
+    worker_count = min(6, max(1, len(tools)))
+    with ThreadPoolExecutor(max_workers=worker_count) as executor:
+        future_to_index = {
+            executor.submit(enrich_living_guideline_tool, tool): idx
+            for idx, tool in enumerate(tools)
+        }
+        for future in as_completed(future_to_index):
+            idx = future_to_index[future]
+            tool = tools[idx]
+            try:
+                enriched[idx] = future.result()
+            except Exception:
+                enriched[idx] = {
+                    "title": tool.get("title", ""),
+                    "url": tool.get("url", ""),
+                    "pdf_url": None,
+                    "pdf_urls": [],
+                }
+
+    return [item for item in enriched if item is not None]
 
 
 class ScrapingCache:
@@ -259,7 +622,7 @@ class ScrapingCache:
         self._updated_at: Optional[datetime] = None
         self._last_error: Optional[str] = None
         self._data: Dict[str, Dict[str, str]] = {}
-        self._living_guideline_tools: List[Dict[str, str]] = []
+        self._living_guideline_tools: List[Dict[str, object]] = []
 
     def refresh(self, force: bool = False) -> bool:
         with self._lock:
@@ -278,9 +641,18 @@ class ScrapingCache:
             living_guideline_tools = scrape_living_guideline_tools(self.tools_resources_url)
             with self._lock:
                 self._data = scraped
-                self._living_guideline_tools = living_guideline_tools
+                if living_guideline_tools:
+                    self._living_guideline_tools = living_guideline_tools
+                    self._last_error = None
+                else:
+                    if self._living_guideline_tools:
+                        self._last_error = (
+                            "Living Guideline Tools extraction returned no links; "
+                            "kept previous cached list."
+                        )
+                    else:
+                        self._last_error = "Living Guideline Tools extraction returned no links."
                 self._updated_at = datetime.now(timezone.utc)
-                self._last_error = None
             return True
         except Exception as exc:
             with self._lock:
@@ -305,7 +677,7 @@ class ScrapingCache:
                 "domains": rows,
                 "living_guideline_tools_count": len(self._living_guideline_tools),
                 "living_guideline_tools": [
-                    {"title": tool["title"], "url": tool["url"]}
+                    dict(tool)
                     for tool in self._living_guideline_tools
                 ],
             }

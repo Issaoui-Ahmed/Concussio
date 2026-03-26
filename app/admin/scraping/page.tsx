@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, Loader2, RefreshCw } from "lucide-react";
+import { AlertTriangle, Download, Loader2, RefreshCw } from "lucide-react";
 
 interface ScrapedDomain {
   domain: string;
@@ -14,6 +14,8 @@ interface ScrapedDomain {
 interface ScrapedLivingGuidelineTool {
   title: string;
   url: string;
+  pdf_url?: string | null;
+  pdf_urls?: string[];
 }
 
 interface ScrapingResponse {
@@ -33,6 +35,7 @@ export default function AdminScrapingPage() {
   const [data, setData] = useState<ScrapingResponse | null>(null);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [isManualRefreshing, setIsManualRefreshing] = useState(false);
+  const [isDownloadingTools, setIsDownloadingTools] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inFlightRef = useRef(false);
 
@@ -88,6 +91,39 @@ export default function AdminScrapingPage() {
     return new Date(data.updated_at).toLocaleString();
   }, [data?.updated_at]);
 
+  const downloadLivingGuidelineTools = useCallback(async () => {
+    setIsDownloadingTools(true);
+    setError(null);
+    try {
+      const response = await fetch("/api/scraping/living-guideline-tools/download?force=true", {
+        method: "GET",
+      });
+      if (!response.ok) {
+        throw new Error("Failed to download Living Guideline Tools ZIP.");
+      }
+
+      const blob = await response.blob();
+      const disposition = response.headers.get("content-disposition") ?? "";
+      const match = disposition.match(/filename=\"?([^\";]+)\"?/i);
+      const fileName = match?.[1] ?? `living-guideline-tools-${new Date().toISOString().slice(0, 10)}.zip`;
+
+      const objectUrl = window.URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = objectUrl;
+      anchor.download = fileName;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      window.URL.revokeObjectURL(objectUrl);
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Unexpected error while downloading ZIP.";
+      setError(message);
+    } finally {
+      setIsDownloadingTools(false);
+    }
+  }, []);
+
   return (
     <div className="h-full overflow-y-auto bg-[#F7F7F9] p-6">
       <div className="mx-auto w-full max-w-6xl space-y-6">
@@ -100,18 +136,32 @@ export default function AdminScrapingPage() {
                 pedsconcussion.com (auto-refresh every minute).
               </p>
             </div>
-            <button
-              onClick={() => void loadScrapingData(true)}
-              disabled={isManualRefreshing}
-              className="inline-flex items-center gap-2 rounded-lg bg-[#00417d] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#002a52] disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {isManualRefreshing ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <RefreshCw className="h-4 w-4" />
-              )}
-              Refresh now
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => void downloadLivingGuidelineTools()}
+                disabled={isDownloadingTools}
+                className="inline-flex items-center gap-2 rounded-lg border border-[#00417d] px-4 py-2 text-sm font-medium text-[#00417d] transition-colors hover:bg-[#e9f1fb] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isDownloadingTools ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Download className="h-4 w-4" />
+                )}
+                Download tools ZIP
+              </button>
+              <button
+                onClick={() => void loadScrapingData(true)}
+                disabled={isManualRefreshing}
+                className="inline-flex items-center gap-2 rounded-lg bg-[#00417d] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#002a52] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isManualRefreshing ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-4 w-4" />
+                )}
+                Refresh now
+              </button>
+            </div>
           </div>
 
           <div className="mt-4 flex flex-wrap gap-4 text-sm text-gray-600">
@@ -168,7 +218,7 @@ export default function AdminScrapingPage() {
               {data?.living_guideline_tools?.length ? (
                 <ul className="mt-4 space-y-2 text-sm">
                   {data.living_guideline_tools.map((tool, index) => (
-                    <li key={tool.url} className="text-gray-700">
+                    <li key={`${tool.url}-${index}`} className="text-gray-700">
                       <span className="mr-2 font-medium text-gray-900">{index + 1}.</span>
                       <a
                         href={tool.url}
@@ -178,6 +228,24 @@ export default function AdminScrapingPage() {
                       >
                         {tool.title}
                       </a>
+                      {tool.pdf_url && (
+                        <div className="ml-6 mt-1">
+                          <span className="font-medium text-gray-900">Primary PDF:</span>{" "}
+                          <a
+                            href={tool.pdf_url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-[#00417d] hover:underline"
+                          >
+                            {tool.pdf_url}
+                          </a>
+                        </div>
+                      )}
+                      {Array.isArray(tool.pdf_urls) && tool.pdf_urls.length > 1 && (
+                        <div className="ml-6 mt-1 text-xs text-gray-600">
+                          Additional PDF links found: {tool.pdf_urls.length - 1}
+                        </div>
+                      )}
                     </li>
                   ))}
                 </ul>

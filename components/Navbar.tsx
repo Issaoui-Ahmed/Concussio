@@ -14,6 +14,7 @@ export function Navbar() {
             { name: "Chatbot", href: "/admin" },
             { name: "Batch Answers", href: "/admin/batch" },
             { name: "Scraping", href: "/admin/scraping" },
+            { name: "Fuel IX", href: "/admin/fuel-ix/copilots" },
         ]
         : [
             { name: "Chatbot", href: "/" },

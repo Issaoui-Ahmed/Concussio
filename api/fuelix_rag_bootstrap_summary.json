@@ -1,0 +1,21 @@
+{
+  "deleted_assistants_count": 0,
+  "deleted_assistant_ids": [],
+  "deleted_vector_stores_count": 2,
+  "deleted_vector_store_ids": [
+    "kb-001w3H000I9b4Q4Za83q1sPrWV1w6RUn",
+    "kb-001w3H001jYPOd4Dsen947U77Y1OlION"
+  ],
+  "created_vector_stores": {
+    "living_guideline_tools": "kb-001w3H0Q3J86hw3Zg6xc1NJ6RT00sTDb",
+    "key_papers_to_include": "kb-001w3H0Q3KFPrX2GYPu81GhcxX3emYZF"
+  },
+  "created_assistants": {
+    "patient": "copilot-001w3H0R24xT5M20SsTr2c6dJ50nwBre",
+    "Healthcare Professional": "copilot-001w3H0R1IAq3y1TKfsf3a1p6D2dEdl6",
+    "Parent or Caregiver": "copilot-001w3H0S2lAw1A0yfMO21TpYZm4FDVS1",
+    "Youth": "copilot-001w3H0T1zYDBL3NS3qU0syR7E2Qfika",
+    "Teacher": "copilot-001w3H0T1uBvL30xKwA43PoQGX2xgUFP",
+    "Coach": "copilot-001w3H0U2zWZMa1hwd950xQs3S2LbjJ6"
+  }
+}

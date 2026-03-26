@@ -1,9 +1,9 @@
-import { ChatInterface } from "@/components/ChatInterface";
+import { AdminCompareChatInterface } from "@/components/AdminCompareChatInterface";
 
 export default function AdminHome() {
   return (
     <main className="h-full">
-      <ChatInterface />
+      <AdminCompareChatInterface />
     </main>
   );
 }
