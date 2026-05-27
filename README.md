@@ -83,7 +83,7 @@ This project is optimized for deployment on **Vercel**.
 3.  Vercel will automatically detect the **Next.js** framework and the **Python** API in the `api/` directory.
 4.  Add environment variables in Vercel Project Settings:
     * `OPENAI_API_KEY`
-    * `FUELIX_API_KEY` (if using Fuel IX admin page)
+    * `FUELIX_API_KEY` (required for the default root chat and Fuel IX admin pages)
     * `FUELIX_API_BASE_URL` (optional, default is `https://api.fuelix.ai/v1`)
 5.  Deploy!
 

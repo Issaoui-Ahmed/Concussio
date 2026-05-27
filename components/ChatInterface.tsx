@@ -239,6 +239,7 @@ export function ChatInterface() {
                     message: userMessage.content,
                     history: historyPayload,
                     user_type: userType,
+                    provider_mode: "fuelix",
                 }),
             });
 
