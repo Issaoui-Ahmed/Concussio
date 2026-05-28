@@ -85,11 +85,12 @@ This project is optimized for deployment on **Vercel**.
     * `OPENAI_API_KEY`
     * `FUELIX_API_KEY` (required for the default root chat and Fuel IX admin pages)
     * `FUELIX_API_BASE_URL` (optional, default is `https://api.fuelix.ai/v1`)
+    * `FUELIX_PRODUCT_ID` (optional, default is `core`)
 5.  Deploy!
 
 Notes:
-* `api/main.py` is for local unified backend development.
-* In production, Vercel serves each `api/*.py` file as its own serverless endpoint (for example `/api/chat`, `/api/followups`, `/api/scraping`, `/api/fuelix/*`).
+* `api/main.py` is the unified FastAPI app used locally and by Vercel.
+* `api/index.py` imports that unified app so Vercel can route `/api/*` requests to FastAPI while preserving the full request path.
 
 ## 📜 License
 

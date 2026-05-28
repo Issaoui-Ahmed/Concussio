@@ -31,8 +31,9 @@ export async function apiFetch<T>(url: string, init?: RequestInit): Promise<T> {
   const response = await fetch(url, { ...init, cache: "no-store" });
   let payload: unknown = null;
   const contentType = response.headers.get("content-type") ?? "";
+  const isJson = contentType.includes("application/json");
 
-  if (contentType.includes("application/json")) {
+  if (isJson) {
     try {
       payload = await response.json();
     } catch {
@@ -40,7 +41,12 @@ export async function apiFetch<T>(url: string, init?: RequestInit): Promise<T> {
     }
   } else {
     const text = await response.text();
-    payload = text.trim() || null;
+    const trimmed = text.trim();
+    if (!response.ok && /^(<!doctype html|<html[\s>])/i.test(trimmed)) {
+      payload = null;
+    } else {
+      payload = trimmed || null;
+    }
   }
 
   if (!response.ok) {
@@ -48,7 +54,12 @@ export async function apiFetch<T>(url: string, init?: RequestInit): Promise<T> {
       ? `${response.status} ${response.statusText}`
       : String(response.status);
     const fallback = `Request failed (${status}).`;
-    const message = asErrorMessage(payload, fallback);
+    const message = asErrorMessage(
+      payload,
+      isJson
+        ? fallback
+        : `${fallback} The API returned a non-JSON response, which usually means the API route is not deployed or routed correctly.`,
+    );
     throw new Error(
       message.toLowerCase() === response.statusText.toLowerCase()
         ? fallback
