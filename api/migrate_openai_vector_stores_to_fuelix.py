@@ -159,7 +159,7 @@ def _request_json(
         if response.status_code == 429 and attempt < max_retries:
             retry_after = response.headers.get("retry-after")
             try:
-                sleep_seconds = max(1.0, float(retry_after)) if retry_after else 65.0
+                sleep_seconds = min(65.0, max(1.0, float(retry_after))) if retry_after else 65.0
             except ValueError:
                 sleep_seconds = 65.0
             time.sleep(sleep_seconds)
