@@ -24,6 +24,8 @@ class CreateCopilotRequest(BaseModel):
     metadata: Optional[Dict[str, Any]] = None
     temperature: Optional[float] = None
     top_p: Optional[Union[float, Dict[str, Any]]] = None
+    reasoning: Optional[Dict[str, Any]] = None
+    reasoning_effort: Optional[Literal["none", "minimal", "low", "medium", "high", "xhigh"]] = None
     tools: List[CopilotTool] = Field(default_factory=list, max_length=128)
     tool_resources: Optional[Dict[str, Any]] = None
 
@@ -60,6 +62,8 @@ class UpdateCopilotRequest(BaseModel):
     metadata: Optional[Dict[str, Any]] = None
     temperature: Optional[float] = None
     top_p: Optional[Union[float, Dict[str, Any]]] = None
+    reasoning: Optional[Dict[str, Any]] = None
+    reasoning_effort: Optional[Literal["none", "minimal", "low", "medium", "high", "xhigh"]] = None
     tools: Optional[List[CopilotTool]] = Field(default=None, max_length=128)
     tool_resources: Optional[Dict[str, Any]] = None
 
@@ -130,6 +134,8 @@ class CreateThreadRunRequest(BaseModel):
     thread: Dict[str, Any]
     stream: Optional[bool] = None
     model: Optional[str] = None
+    reasoning: Optional[Dict[str, Any]] = None
+    reasoning_effort: Optional[Literal["none", "minimal", "low", "medium", "high", "xhigh"]] = None
 
 
 class CreateMessageRequest(BaseModel):

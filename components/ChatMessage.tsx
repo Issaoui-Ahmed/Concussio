@@ -10,6 +10,43 @@ function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs));
 }
 
+const FUELIX_CITATION_HEADING_RE =
+    /^\s*(?:#{1,6}\s*)?(?:[*_]{1,3})?\s*copilot\s+knowledge\s+base\s+citations\s*(?:[*_]{1,3})?\s*:?\s*$/i;
+const FUELIX_CITATION_ENTRY_RE = /^\s*(?:[-*+]\s*)?\[\d+\]\s+.+$/;
+
+function stripFuelIxCitationBlocks(value: string) {
+    const lines = value.split(/\r?\n/);
+    const cleaned: string[] = [];
+    let index = 0;
+
+    while (index < lines.length) {
+        if (!FUELIX_CITATION_HEADING_RE.test(lines[index])) {
+            cleaned.push(lines[index]);
+            index += 1;
+            continue;
+        }
+
+        index += 1;
+        while (index < lines.length) {
+            const line = lines[index];
+            if (!line.trim() || FUELIX_CITATION_ENTRY_RE.test(line)) {
+                index += 1;
+                continue;
+            }
+            break;
+        }
+
+        while (cleaned.length > 0 && !cleaned[cleaned.length - 1].trim()) {
+            cleaned.pop();
+        }
+        if (index < lines.length && cleaned.length > 0 && lines[index].trim()) {
+            cleaned.push("");
+        }
+    }
+
+    return cleaned.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+}
+
 interface ChatMessageProps {
     role: "user" | "assistant";
     content: string;
@@ -28,6 +65,7 @@ export function ChatMessage({
     followUpsDisabled = false,
 }: ChatMessageProps) {
     const isUser = role === "user";
+    const displayContent = isUser ? content : stripFuelIxCitationBlocks(content);
     const shouldRenderFollowUps =
         !isUser && (
             followUpsStatus === "loading" ||
@@ -66,7 +104,7 @@ export function ChatMessage({
                     <div className="font-semibold text-sm mb-1 text-gray-900">
                         {isUser ? "You" : "ConcussCare"}
                     </div>
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{displayContent}</ReactMarkdown>
 
                     {shouldRenderFollowUps && (
                         <div className="mt-5 border-t border-gray-100 pt-4 not-prose">

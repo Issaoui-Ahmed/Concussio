@@ -19,7 +19,8 @@ from core.prompts import build_generator_prompt
 
 
 DEFAULT_FUELIX_BASE_URL = "https://api.fuelix.ai/v1"
-DEFAULT_MODEL = "gpt-5.2"
+DEFAULT_MODEL = "gpt-5.4"
+DEFAULT_REASONING_EFFORT = "low"
 
 SOURCE_VECTOR_STORE_NAMES = [
     "Living guideline tools",
@@ -267,10 +268,13 @@ def _assistant_payload(user_type: str, name: str, vector_store_ids: List[str], m
         "description": f"ConcussCare assistant for {user_type}.",
         "model": model,
         "instructions": build_generator_prompt("{{USER_QUERY}}", user_type),
-        "tools": [],
+        "tools": [{"type": "reasoning"}],
+        "reasoning": {"effort": DEFAULT_REASONING_EFFORT},
+        "reasoning_effort": DEFAULT_REASONING_EFFORT,
         "tool_resources": {"file_search": {"vector_store_ids": vector_store_ids}},
         "metadata": {
             "user_type": user_type,
+            "reasoning_effort": DEFAULT_REASONING_EFFORT,
             "vector_store_names": [ASSISTANT_VECTOR_STORE_NAME],
             "source_vector_store_names": SOURCE_VECTOR_STORE_NAMES,
             "rebuild_source": "api/rebuild_fuelix_assistants.py",
@@ -335,6 +339,7 @@ def _write_summary(
         "created_at_unix": int(time.time()),
         "fuelix_product_id": os.getenv("FUELIX_PRODUCT_ID", "core").strip() or None,
         "model": model,
+        "reasoning_effort": DEFAULT_REASONING_EFFORT,
         "source_vector_store_ids": source_vector_store_ids,
         "source_vector_store_names": SOURCE_VECTOR_STORE_NAMES,
         "assistant_vector_store_id": assistant_vector_store_id,

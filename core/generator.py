@@ -28,7 +28,7 @@ def generate_answer(query, tools = False, papers = False):
         vector_store_ids.append("vs_68e5590288048191946069efcdfe8f52")
     if len(vector_store_ids) == 0:
             response = client.responses.create(
-            model="gpt-5.2",
+            model="gpt-5.4",
             input=query,
             reasoning={"effort": "low"},
             text={
@@ -36,7 +36,7 @@ def generate_answer(query, tools = False, papers = False):
         })
     else:
         response = client.responses.create(
-            model="gpt-5.2",
+            model="gpt-5.4",
             input=query,
             reasoning={"effort": "low"},
             text={

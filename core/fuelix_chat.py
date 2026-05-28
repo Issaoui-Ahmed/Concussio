@@ -1,4 +1,5 @@
 import os
+import re
 import time
 from typing import Any, Dict, List, Optional
 
@@ -9,7 +10,13 @@ from dotenv import load_dotenv
 load_dotenv()
 
 DEFAULT_FUELIX_BASE_URL = "https://api.fuelix.ai/v1"
+DEFAULT_REASONING_EFFORT = "low"
 TERMINAL_RUN_STATES = {"completed", "failed", "cancelled", "expired", "incomplete"}
+FUELIX_CITATION_HEADING_RE = re.compile(
+    r"^\s*(?:#{1,6}\s*)?(?:[*_]{1,3})?\s*copilot\s+knowledge\s+base\s+citations\s*(?:[*_]{1,3})?\s*:?\s*$",
+    re.IGNORECASE,
+)
+FUELIX_CITATION_ENTRY_RE = re.compile(r"^\s*(?:[-*+]\s*)?\[\d+\]\s+.+$")
 
 CANONICAL_USER_TYPES = {
     "patient": "patient",
@@ -132,6 +139,33 @@ def _extract_assistant_text(messages_payload: Any) -> str:
     return ""
 
 
+def _strip_fuelix_citation_blocks(answer: str) -> str:
+    lines = answer.splitlines()
+    cleaned: List[str] = []
+    index = 0
+
+    while index < len(lines):
+        if not FUELIX_CITATION_HEADING_RE.match(lines[index]):
+            cleaned.append(lines[index])
+            index += 1
+            continue
+
+        index += 1
+        while index < len(lines):
+            line = lines[index]
+            if not line.strip() or FUELIX_CITATION_ENTRY_RE.match(line):
+                index += 1
+                continue
+            break
+
+        while cleaned and not cleaned[-1].strip():
+            cleaned.pop()
+        if index < len(lines) and cleaned and lines[index].strip():
+            cleaned.append("")
+
+    return re.sub(r"\n{3,}", "\n\n", "\n".join(cleaned)).strip()
+
+
 def _poll_terminal_run(
     thread_id: str,
     run_id: str,
@@ -196,6 +230,8 @@ def generate_fuelix_answer(
         json_payload={
             "assistant_id": assistant_id,
             "thread": {"messages": [{"role": "user", "content": user_query}]},
+            "reasoning": {"effort": DEFAULT_REASONING_EFFORT},
+            "reasoning_effort": DEFAULT_REASONING_EFFORT,
         },
     )
 
@@ -216,6 +252,7 @@ def generate_fuelix_answer(
     answer = _extract_assistant_text(messages_payload)
     if not answer:
         raise RuntimeError("Fuel IX did not return assistant text in thread messages.")
+    answer = _strip_fuelix_citation_blocks(answer)
 
     elapsed_ms = int((time.perf_counter() - started) * 1000)
     return {

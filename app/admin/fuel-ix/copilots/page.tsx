@@ -24,6 +24,8 @@ type CopilotPayload = {
   metadata?: Record<string, unknown>;
   temperature?: number;
   top_p?: number;
+  reasoning?: { effort: string };
+  reasoning_effort?: string;
   tools: Array<{ type: string }>;
   tool_resources?: { file_search: { vector_store_ids: string[] } };
 };
@@ -43,26 +45,26 @@ export default function FuelIxCopilotsPage() {
   const [success, setSuccess] = useState<string | null>(null);
 
   const [name, setName] = useState("");
-  const [model, setModel] = useState("claude-sonnet-4-5");
+  const [model, setModel] = useState("gpt-5.4");
   const [description, setDescription] = useState("");
   const [instructions, setInstructions] = useState("");
   const [metadataText, setMetadataText] = useState("");
   const [temperature, setTemperature] = useState("");
   const [topP, setTopP] = useState("");
-  const [tools, setTools] = useState<string[]>([]);
+  const [tools, setTools] = useState<string[]>(["reasoning"]);
   const [vectorStoreIds, setVectorStoreIds] = useState("");
 
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const resetForm = () => {
     setName("");
-    setModel("claude-sonnet-4-5");
+    setModel("gpt-5.4");
     setDescription("");
     setInstructions("");
     setMetadataText("");
     setTemperature("");
     setTopP("");
-    setTools([]);
+    setTools(["reasoning"]);
     setVectorStoreIds("");
     setEditingId(null);
   };
@@ -94,6 +96,7 @@ export default function FuelIxCopilotsPage() {
       .split(",")
       .map((value) => value.trim())
       .filter(Boolean);
+    const enabledTools = Array.from(new Set([...tools, "reasoning"]));
     return {
       name: name.trim(),
       model: model.trim(),
@@ -102,7 +105,9 @@ export default function FuelIxCopilotsPage() {
       metadata: parseJson(metadataText),
       temperature: temperature ? Number(temperature) : undefined,
       top_p: topP ? Number(topP) : undefined,
-      tools: tools.map((type) => ({ type })),
+      reasoning: { effort: "low" },
+      reasoning_effort: "low",
+      tools: enabledTools.map((type) => ({ type })),
       tool_resources: ids.length ? { file_search: { vector_store_ids: ids } } : undefined,
     };
   };
@@ -150,7 +155,7 @@ export default function FuelIxCopilotsPage() {
         return typeof value === "string" ? value : null;
       })
       .filter((value): value is string => Boolean(value));
-    setTools(nextTools);
+    setTools(Array.from(new Set([...nextTools, "reasoning"])));
     const resources =
       item.tool_resources && typeof item.tool_resources === "object"
         ? (item.tool_resources as Record<string, unknown>)
@@ -263,7 +268,8 @@ export default function FuelIxCopilotsPage() {
                   <label key={tool} className="inline-flex items-center gap-1">
                     <input
                       type="checkbox"
-                      checked={tools.includes(tool)}
+                      checked={tool === "reasoning" || tools.includes(tool)}
+                      disabled={tool === "reasoning"}
                       onChange={(e) =>
                         setTools((prev) =>
                           e.target.checked

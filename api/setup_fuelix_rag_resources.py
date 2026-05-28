@@ -15,6 +15,10 @@ if str(PROJECT_ROOT) not in sys.path:
 from core.prompts import build_generator_prompt
 
 
+DEFAULT_MODEL = "gpt-5.4"
+DEFAULT_REASONING_EFFORT = "low"
+
+
 def _load_env() -> None:
     load_dotenv(PROJECT_ROOT / ".env")
 
@@ -145,7 +149,10 @@ def _create_assistants(vector_store_ids: List[str]) -> Dict[str, str]:
     created: Dict[str, str] = {}
     for user_type, name in assistant_specs:
         instructions = build_generator_prompt("{{USER_QUERY}}", user_type)
-        metadata: Dict[str, Any] = {"user_type": user_type}
+        metadata: Dict[str, Any] = {
+            "user_type": user_type,
+            "reasoning_effort": DEFAULT_REASONING_EFFORT,
+        }
         if secondary_store_ids:
             metadata["additional_vector_store_ids"] = secondary_store_ids
 
@@ -155,9 +162,11 @@ def _create_assistants(vector_store_ids: List[str]) -> Dict[str, str]:
             json_body={
                 "name": name,
                 "description": f"ConcussCare assistant for {user_type}.",
-                "model": "claude-sonnet-4-5",
+                "model": DEFAULT_MODEL,
                 "instructions": instructions,
-                "tools": [],
+                "tools": [{"type": "reasoning"}],
+                "reasoning": {"effort": DEFAULT_REASONING_EFFORT},
+                "reasoning_effort": DEFAULT_REASONING_EFFORT,
                 "tool_resources": {"file_search": {"vector_store_ids": [primary_store_id]}},
                 "metadata": metadata,
             },

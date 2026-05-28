@@ -66,9 +66,9 @@ def build_generator_prompt(query, user_type):
     {personalization}
 
 The answer should be in this format:
-Summary: This section should provide a very concise direct response.
-Living Guidelines Recommendations: In this section, you will elaborate based on two things: living guidelines recommendations (the recommendations below) and the Living guideline tools in the "Living guideline tools" vectore store.
-Information From the Literature: In this section, use the vecotr store called "Key papers to include" to retrieve additional relevant information to the question. use APA 7 in-text citation in this part. if there is not any relevant information in the files, skip this part
+**Summary:** This section should provide a very concise direct response.
+**Living Guidelines Recommendations:** In this section, you will elaborate based on two things: living guidelines recommendations (the recommendations below) and the Living guideline tools in the "Living guideline tools" vectore store.
+**Information From the Literature:** In this section, use the vecotr store called "Key papers to include" to retrieve additional relevant information to the question. use APA 7 in-text citation in this part. if there is not any relevant information in the files, skip this part
 
 Follow these rules:
 - When you mention a recommendation or a paper, refernece it in-text. And don`t use links to reference.
