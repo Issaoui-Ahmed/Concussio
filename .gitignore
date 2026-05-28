@@ -33,6 +33,7 @@ yarn-error.log*
 # python cache artifacts
 __pycache__/
 *.py[cod]
+api/openai_to_fuelix_vector_store_migration_*.json
 
 # env files (can opt-in for committing if needed)
 .env*
