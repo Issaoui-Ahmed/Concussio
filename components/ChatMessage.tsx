@@ -47,10 +47,16 @@ function stripFuelIxCitationBlocks(value: string) {
     return cleaned.join("\n").replace(/\n{3,}/g, "\n\n").trim();
 }
 
+type Lang = "en" | "fr";
+
 interface ChatMessageProps {
     role: "user" | "assistant";
     content: string;
+    displayLang?: Lang;
+    translations?: Partial<Record<Lang, string>>;
+    translationStatus?: "idle" | "loading" | "ready" | "error";
     followUps?: string[];
+    followUpTranslations?: Partial<Record<Lang, string[]>>;
     followUpsStatus?: "idle" | "loading" | "ready" | "error";
     onFollowUpClick?: (question: string) => void;
     followUpsDisabled?: boolean;
@@ -59,13 +65,20 @@ interface ChatMessageProps {
 export function ChatMessage({
     role,
     content,
+    displayLang = "en",
+    translations,
+    translationStatus = "idle",
     followUps = [],
+    followUpTranslations,
     followUpsStatus = "idle",
     onFollowUpClick,
     followUpsDisabled = false,
 }: ChatMessageProps) {
     const isUser = role === "user";
-    const displayContent = isUser ? content : stripFuelIxCitationBlocks(content);
+    const baseContent = translations?.[displayLang] ?? content;
+    const displayContent = isUser ? baseContent : stripFuelIxCitationBlocks(baseContent);
+    const displayFollowUps = followUpTranslations?.[displayLang] ?? followUps;
+    const isTranslating = translationStatus === "loading" && !(translations && translations[displayLang]);
     const shouldRenderFollowUps =
         !isUser && (
             followUpsStatus === "loading" ||
@@ -104,6 +117,9 @@ export function ChatMessage({
                     <div className="font-semibold text-sm mb-1 text-gray-900">
                         {isUser ? "You" : "ConcussCare"}
                     </div>
+                    {isTranslating && (
+                        <div className="mb-2 text-xs italic text-gray-400 not-prose">Translating…</div>
+                    )}
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>{displayContent}</ReactMarkdown>
 
                     {shouldRenderFollowUps && (
@@ -120,7 +136,7 @@ export function ChatMessage({
                                         </div>
                                     ))
                                 ) : (
-                                    followUps.slice(0, 3).map((question, idx) => (
+                                    displayFollowUps.slice(0, 3).map((question, idx) => (
                                         <button
                                             key={`${question}-${idx}`}
                                             type="button"

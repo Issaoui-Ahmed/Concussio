@@ -45,7 +45,7 @@ export default function FuelIxCopilotsPage() {
   const [success, setSuccess] = useState<string | null>(null);
 
   const [name, setName] = useState("");
-  const [model, setModel] = useState("gpt-5.4");
+  const [model, setModel] = useState("gpt-5.2");
   const [description, setDescription] = useState("");
   const [instructions, setInstructions] = useState("");
   const [metadataText, setMetadataText] = useState("");
@@ -58,7 +58,7 @@ export default function FuelIxCopilotsPage() {
 
   const resetForm = () => {
     setName("");
-    setModel("gpt-5.4");
+    setModel("gpt-5.2");
     setDescription("");
     setInstructions("");
     setMetadataText("");

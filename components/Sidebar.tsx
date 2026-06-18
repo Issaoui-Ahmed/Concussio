@@ -15,6 +15,7 @@ export interface Session {
     title: string;
     messages: any[]; // Using any for now to avoid circular dependency types, or replicate Message type
     createdAt: number;
+    displayLang?: "en" | "fr"; // per-chat language toggle (whole conversation)
 }
 
 interface SidebarProps {

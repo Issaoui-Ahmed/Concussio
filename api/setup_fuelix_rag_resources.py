@@ -12,10 +12,10 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.append(str(PROJECT_ROOT))
 
-from core.prompts import build_generator_prompt
+from core.prompts import build_fuelix_assistant_instructions
 
 
-DEFAULT_MODEL = "gpt-5.4"
+DEFAULT_MODEL = "gpt-5.2"
 DEFAULT_REASONING_EFFORT = "low"
 
 
@@ -148,7 +148,7 @@ def _create_assistants(vector_store_ids: List[str]) -> Dict[str, str]:
 
     created: Dict[str, str] = {}
     for user_type, name in assistant_specs:
-        instructions = build_generator_prompt("{{USER_QUERY}}", user_type)
+        instructions = build_fuelix_assistant_instructions(user_type)
         metadata: Dict[str, Any] = {
             "user_type": user_type,
             "reasoning_effort": DEFAULT_REASONING_EFFORT,

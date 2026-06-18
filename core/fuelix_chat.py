@@ -6,6 +6,8 @@ from typing import Any, Dict, List, Optional
 import requests
 from dotenv import load_dotenv
 
+from core.prompts import build_fuelix_user_prompt
+
 
 load_dotenv()
 
@@ -13,10 +15,14 @@ DEFAULT_FUELIX_BASE_URL = "https://api.fuelix.ai/v1"
 DEFAULT_REASONING_EFFORT = "low"
 TERMINAL_RUN_STATES = {"completed", "failed", "cancelled", "expired", "incomplete"}
 FUELIX_CITATION_HEADING_RE = re.compile(
-    r"^\s*(?:#{1,6}\s*)?(?:[*_]{1,3})?\s*copilot\s+knowledge\s+base\s+citations\s*(?:[*_]{1,3})?\s*:?\s*$",
+    r"^\s*(?:#{1,6}\s*)?(?:[*_]{1,3})?\s*(?:<<\s*)?copilot(?:\s*>>)?\s+knowledge\s+base\s+citations\s*(?:[*_]{1,3})?\s*:?\s*$",
     re.IGNORECASE,
 )
 FUELIX_CITATION_ENTRY_RE = re.compile(r"^\s*(?:[-*+]\s*)?\[\d+\]\s+.+$")
+FUELIX_INLINE_CITATION_RE = re.compile(
+    r"[^\S\n]*(?:[*_]{1,3})?[^\S\n]*(?:<<[^\S\n]*)?copilot(?:[^\S\n]*>>)?[^\S\n]+knowledge[^\S\n]+base[^\S\n]+citations[^\S\n]*(?:[*_]{1,3})?[^\S\n]*:?[^\S\n]*(?:[-*+][^\S\n]*)?(?:\[\d+\][^\S\n]+[^;\n]+(?:;[^\S\n]*)?)*",
+    re.IGNORECASE,
+)
 
 CANONICAL_USER_TYPES = {
     "patient": "patient",
@@ -112,6 +118,30 @@ def _request_fuelix(
     return payload
 
 
+def _extract_chat_completion_text(payload: Any) -> str:
+    if not isinstance(payload, dict):
+        return ""
+    choices = payload.get("choices")
+    if not isinstance(choices, list) or not choices:
+        return ""
+    first = choices[0]
+    if not isinstance(first, dict):
+        return ""
+    message = first.get("message")
+    if isinstance(message, dict):
+        content = message.get("content")
+        if isinstance(content, str):
+            return content.strip()
+        if isinstance(content, list):
+            parts: List[str] = []
+            for block in content:
+                if isinstance(block, dict) and isinstance(block.get("text"), str):
+                    parts.append(block["text"])
+            return "".join(parts).strip()
+    text = first.get("text")
+    return text.strip() if isinstance(text, str) else ""
+
+
 def _extract_items(payload: Any) -> List[Dict[str, Any]]:
     if isinstance(payload, dict) and isinstance(payload.get("data"), list):
         return [item for item in payload["data"] if isinstance(item, dict)]
@@ -163,7 +193,15 @@ def _strip_fuelix_citation_blocks(answer: str) -> str:
         if index < len(lines) and cleaned and lines[index].strip():
             cleaned.append("")
 
-    return re.sub(r"\n{3,}", "\n\n", "\n".join(cleaned)).strip()
+    cleaned_text = "\n".join(cleaned)
+    cleaned_text = FUELIX_INLINE_CITATION_RE.sub("", cleaned_text)
+    cleaned_text = "\n".join(
+        line
+        for line in cleaned_text.splitlines()
+        if not FUELIX_CITATION_ENTRY_RE.match(line) and not re.match(r"^\s*[-*+]\s*$", line)
+    )
+    cleaned_text = re.sub(r"[ \t]+\n", "\n", cleaned_text)
+    return re.sub(r"\n{3,}", "\n\n", cleaned_text).strip()
 
 
 def _poll_terminal_run(
@@ -217,19 +255,57 @@ def resolve_assistant_id(user_type: Optional[str]) -> str:
     raise RuntimeError("Unable to resolve a valid Fuel IX assistant id.")
 
 
+def fuelix_chat_completion(
+    messages: List[Dict[str, Any]],
+    *,
+    model: str,
+    temperature: Optional[float] = None,
+    reasoning_effort: Optional[str] = None,
+    response_format: Optional[Dict[str, Any]] = None,
+    timeout_seconds: int = 90,
+) -> str:
+    """Run a single stateless chat completion through Fuel IX's OpenAI-compatible API.
+
+    Unlike ``generate_fuelix_answer``, this does not create an assistant/thread/run
+    and does no RAG/citation handling. It is meant for lightweight auxiliary calls
+    such as follow-up question generation and translation.
+    """
+    json_payload: Dict[str, Any] = {"model": model, "messages": messages}
+    if temperature is not None:
+        json_payload["temperature"] = temperature
+    if reasoning_effort:
+        json_payload["reasoning_effort"] = reasoning_effort
+    if response_format is not None:
+        json_payload["response_format"] = response_format
+
+    payload = _request_fuelix(
+        "POST",
+        "/chat/completions",
+        json_payload=json_payload,
+        timeout_seconds=timeout_seconds,
+    )
+
+    text = _extract_chat_completion_text(payload)
+    if not text:
+        raise RuntimeError("Fuel IX chat completion did not include message content.")
+    return text
+
+
 def generate_fuelix_answer(
     user_query: str,
     user_type: Optional[str],
 ) -> Dict[str, Any]:
     started = time.perf_counter()
-    assistant_id = resolve_assistant_id(user_type)
+    normalized_user_type = normalize_user_type(user_type)
+    assistant_id = resolve_assistant_id(normalized_user_type)
+    user_prompt = build_fuelix_user_prompt(user_query, normalized_user_type)
 
     run_payload = _request_fuelix(
         "POST",
         "/threads/runs",
         json_payload={
             "assistant_id": assistant_id,
-            "thread": {"messages": [{"role": "user", "content": user_query}]},
+            "thread": {"messages": [{"role": "user", "content": user_prompt}]},
             "reasoning": {"effort": DEFAULT_REASONING_EFFORT},
             "reasoning_effort": DEFAULT_REASONING_EFFORT,
         },

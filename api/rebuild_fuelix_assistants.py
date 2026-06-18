@@ -15,11 +15,11 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.append(str(PROJECT_ROOT))
 
-from core.prompts import build_generator_prompt
+from core.prompts import build_fuelix_assistant_instructions
 
 
 DEFAULT_FUELIX_BASE_URL = "https://api.fuelix.ai/v1"
-DEFAULT_MODEL = "gpt-5.4"
+DEFAULT_MODEL = "gpt-5.2"
 DEFAULT_REASONING_EFFORT = "low"
 
 SOURCE_VECTOR_STORE_NAMES = [
@@ -267,7 +267,7 @@ def _assistant_payload(user_type: str, name: str, vector_store_ids: List[str], m
         "name": name,
         "description": f"ConcussCare assistant for {user_type}.",
         "model": model,
-        "instructions": build_generator_prompt("{{USER_QUERY}}", user_type),
+        "instructions": build_fuelix_assistant_instructions(user_type),
         "tools": [{"type": "reasoning"}],
         "reasoning": {"effort": DEFAULT_REASONING_EFFORT},
         "reasoning_effort": DEFAULT_REASONING_EFFORT,

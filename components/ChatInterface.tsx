@@ -8,12 +8,18 @@ import { Sidebar, Session } from "./Sidebar";
 import { Send } from "lucide-react";
 
 type FollowUpsStatus = "idle" | "loading" | "ready" | "error";
+type Lang = "en" | "fr";
+type TranslationStatus = "idle" | "loading" | "ready" | "error";
 
 interface Message {
     id?: string;
     role: "user" | "assistant";
     content: string;
+    lang?: Lang;
+    translations?: Partial<Record<Lang, string>>;
+    translationStatus?: TranslationStatus;
     followUps?: string[];
+    followUpTranslations?: Partial<Record<Lang, string[]>>;
     followUpsStatus?: FollowUpsStatus;
 }
 
@@ -97,6 +103,8 @@ export function ChatInterface() {
         [currentSession]
     );
 
+    const displayLang: Lang = currentSession?.displayLang ?? "en";
+
     useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages]);
@@ -152,6 +160,129 @@ export function ChatInterface() {
         );
     };
 
+    const patchMessage = (
+        sessionId: string,
+        messageId: string,
+        patch: (message: Message) => Message
+    ) => {
+        setSessions(prev =>
+            prev.map(s => {
+                if (s.id !== sessionId) return s;
+                return {
+                    ...s,
+                    messages: s.messages.map(message => {
+                        const typedMessage = message as Message;
+                        if (typedMessage.id !== messageId) return typedMessage;
+                        return patch(typedMessage);
+                    }),
+                };
+            })
+        );
+    };
+
+    const callTranslate = async (
+        texts: string[],
+        targetLang?: Lang
+    ): Promise<{ source_lang: Lang; target_lang: Lang; texts: string[] } | null> => {
+        try {
+            const res = await fetch("/api/translate", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ texts, target_lang: targetLang }),
+            });
+            if (!res.ok) throw new Error("Failed to translate");
+            const data = await res.json();
+            if (!data || !Array.isArray(data.texts)) return null;
+            return data as { source_lang: Lang; target_lang: Lang; texts: string[] };
+        } catch (error) {
+            console.error(error);
+            return null;
+        }
+    };
+
+    // Eager: translate a message's content into the opposite language and cache both sides.
+    const translateMessageContent = async (sessionId: string, messageId: string, content: string) => {
+        if (!content.trim()) return;
+        patchMessage(sessionId, messageId, m => ({ ...m, translationStatus: "loading" }));
+        const result = await callTranslate([content]);
+        if (!result) {
+            patchMessage(sessionId, messageId, m => ({ ...m, translationStatus: "error" }));
+            return;
+        }
+        const { source_lang: src, target_lang: tgt, texts } = result;
+        patchMessage(sessionId, messageId, m => ({
+            ...m,
+            lang: src,
+            translations: { ...(m.translations ?? {}), [src]: content, [tgt]: texts[0] ?? content },
+            translationStatus: "ready",
+        }));
+        // Set the chat's toggle to the conversation's language the first time we detect it.
+        setSessions(prev => prev.map(s => (s.id === sessionId && !s.displayLang ? { ...s, displayLang: src } : s)));
+    };
+
+    // Eager: translate the follow-up suggestions into the opposite language and cache both sides.
+    const translateMessageFollowUps = async (sessionId: string, messageId: string, followUps: string[]) => {
+        if (!followUps.length) return;
+        const result = await callTranslate(followUps);
+        if (!result) return;
+        const { source_lang: src, target_lang: tgt, texts } = result;
+        patchMessage(sessionId, messageId, m => ({
+            ...m,
+            followUpTranslations: { ...(m.followUpTranslations ?? {}), [src]: followUps, [tgt]: texts },
+        }));
+    };
+
+    // Lazy/correctness: when the toggle flips, ensure every message has the target language ready.
+    const ensureSessionTranslated = async (sessionId: string, lang: Lang) => {
+        const session = sessions.find(s => s.id === sessionId);
+        if (!session) return;
+        const sessionMessages = session.messages as Message[];
+        await Promise.all(
+            sessionMessages.map(async message => {
+                if (!message.id) return;
+                const messageId = message.id;
+                const needsContent = Boolean(message.content?.trim()) && !message.translations?.[lang];
+                const followUps = message.followUps ?? [];
+                const needsFollowUps = followUps.length > 0 && !message.followUpTranslations?.[lang];
+
+                if (needsContent) {
+                    patchMessage(sessionId, messageId, m => ({ ...m, translationStatus: "loading" }));
+                    const result = await callTranslate([message.content], lang);
+                    if (result) {
+                        patchMessage(sessionId, messageId, m => ({
+                            ...m,
+                            lang: m.lang ?? result.source_lang,
+                            translations: {
+                                ...(m.translations ?? {}),
+                                [result.source_lang]: m.translations?.[result.source_lang] ?? message.content,
+                                [lang]: result.texts[0] ?? message.content,
+                            },
+                            translationStatus: "ready",
+                        }));
+                    } else {
+                        patchMessage(sessionId, messageId, m => ({ ...m, translationStatus: "error" }));
+                    }
+                }
+
+                if (needsFollowUps) {
+                    const result = await callTranslate(followUps, lang);
+                    if (result) {
+                        patchMessage(sessionId, messageId, m => ({
+                            ...m,
+                            followUpTranslations: { ...(m.followUpTranslations ?? {}), [lang]: result.texts },
+                        }));
+                    }
+                }
+            })
+        );
+    };
+
+    const handleToggleLang = (lang: Lang) => {
+        if (!currentSessionId) return;
+        setSessions(prev => prev.map(s => (s.id === currentSessionId ? { ...s, displayLang: lang } : s)));
+        void ensureSessionTranslated(currentSessionId, lang);
+    };
+
     const requestFollowUps = async (params: {
         sessionId: string;
         assistantMessageId: string;
@@ -180,20 +311,24 @@ export function ChatInterface() {
                     .slice(0, 3)
                 : [];
 
+            const normalized = normalizeFollowUps(followUps);
             updateFollowUpsForMessage(
                 params.sessionId,
                 params.assistantMessageId,
-                normalizeFollowUps(followUps),
+                normalized,
                 "ready"
             );
+            void translateMessageFollowUps(params.sessionId, params.assistantMessageId, normalized);
         } catch (error) {
             console.error(error);
+            const normalized = normalizeFollowUps([]);
             updateFollowUpsForMessage(
                 params.sessionId,
                 params.assistantMessageId,
-                normalizeFollowUps([]),
+                normalized,
                 "ready"
             );
+            void translateMessageFollowUps(params.sessionId, params.assistantMessageId, normalized);
         }
     };
 
@@ -210,6 +345,7 @@ export function ChatInterface() {
             id: createMessageId(),
             role: "user",
             content: trimmedInput,
+            translationStatus: "loading",
         };
 
         setSessions(prev => prev.map(s => {
@@ -222,6 +358,8 @@ export function ChatInterface() {
             }
             return s;
         }));
+
+        void translateMessageContent(activeSessionId, userMessage.id as string, userMessage.content);
 
         if (source === "input") {
             setInput("");
@@ -254,6 +392,7 @@ export function ChatInterface() {
                 id: assistantMessageId,
                 role: "assistant",
                 content: data.answer,
+                translationStatus: "loading",
                 followUps: [],
                 followUpsStatus: "loading",
             };
@@ -264,6 +403,8 @@ export function ChatInterface() {
                 }
                 return s;
             }));
+
+            void translateMessageContent(activeSessionId, assistantMessageId, data.answer);
 
             void requestFollowUps({
                 sessionId: activeSessionId,
@@ -312,6 +453,29 @@ export function ChatInterface() {
             {/* Main Content */}
             <div className="flex-1 flex flex-col h-full relative">
 
+                {/* Language toggle (applies to the whole chat) */}
+                {messages.length > 0 && (
+                    <div className="flex items-center justify-end gap-2 border-b border-gray-100 bg-white/70 px-4 py-2 backdrop-blur">
+                        <span className="text-xs font-medium text-gray-400">Language</span>
+                        <div className="inline-flex rounded-lg border border-gray-200 bg-white p-0.5">
+                            {(["en", "fr"] as Lang[]).map(lang => (
+                                <button
+                                    key={lang}
+                                    type="button"
+                                    onClick={() => handleToggleLang(lang)}
+                                    className={`rounded-md px-3 py-1 text-xs font-semibold transition-colors ${
+                                        displayLang === lang
+                                            ? "bg-[#00417d] text-white"
+                                            : "text-gray-600 hover:bg-gray-100"
+                                    }`}
+                                >
+                                    {lang.toUpperCase()}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 {/* Chat Area */}
                 <div className="flex-1 overflow-y-auto w-full">
                     <div className="flex flex-col min-h-full pb-36 pt-10">
@@ -337,7 +501,11 @@ export function ChatInterface() {
                                         key={msg.id ?? `${idx}-${msg.role}`}
                                         role={msg.role}
                                         content={msg.content}
+                                        displayLang={displayLang}
+                                        translations={msg.translations}
+                                        translationStatus={msg.translationStatus}
                                         followUps={msg.followUps}
+                                        followUpTranslations={msg.followUpTranslations}
                                         followUpsStatus={msg.followUpsStatus}
                                         onFollowUpClick={(question) => void sendMessage(question, "followup")}
                                         followUpsDisabled={isLoading}

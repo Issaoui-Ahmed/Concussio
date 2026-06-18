@@ -5,12 +5,14 @@ import re
 from typing import List
 from openai import OpenAI
 
+from core.fuelix_chat import fuelix_chat_completion
+
 
 
 load_dotenv()
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-FOLLOWUP_MODEL = os.getenv("OPENAI_FOLLOWUP_MODEL", "gpt-4.1-mini")
+FOLLOWUP_MODEL = os.getenv("FUELIX_FOLLOWUP_MODEL", "gpt-4.1-mini")
 
 client = OpenAI(api_key=OPENAI_API_KEY)
 
@@ -135,11 +137,11 @@ Task:
 """.strip()
 
     try:
-        response = client.responses.create(
+        raw_output = fuelix_chat_completion(
+            messages=[{"role": "user", "content": prompt}],
             model=FOLLOWUP_MODEL,
-            input=prompt,
         )
-        return _extract_follow_ups(response.output_text)
+        return _extract_follow_ups(raw_output)
     except Exception:
         return FALLBACK_FOLLOW_UPS.copy()
 
