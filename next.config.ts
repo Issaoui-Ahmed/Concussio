@@ -7,6 +7,9 @@ const apiBaseUrl = (
 ).replace(/\/+$/, "");
 
 const nextConfig: NextConfig = {
+  // Lets a second dev server run alongside an existing one: `next dev` takes a lock on
+  // <distDir>/dev/lock, so a separate directory avoids "Unable to acquire lock".
+  distDir: process.env.NEXT_DIST_DIR || ".next",
   experimental: {
     proxyTimeout: 120000,
   },

@@ -15,6 +15,9 @@
 
 # next.js
 /.next/
+# Alternate build dirs via NEXT_DIST_DIR (see next.config.ts) — used to run a second dev
+# server alongside one that already holds the .next/dev lock.
+/.next-*/
 /out/
 
 # production
@@ -33,6 +36,8 @@ yarn-error.log*
 # python cache artifacts
 __pycache__/
 *.py[cod]
+# Run reports from the (deleted) OpenAI -> Fuel IX vector store migration. Kept ignored so the
+# leftover local artifacts never get committed.
 api/openai_to_fuelix_vector_store_migration_*.json
 api/fuelix_assistant_rebuild_*.json
 

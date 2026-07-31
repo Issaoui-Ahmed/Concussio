@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from typing import Optional
+from typing import Literal, Optional
 import os
 import sys
 
@@ -17,6 +17,7 @@ class FollowUpRequest(BaseModel):
     message: str
     answer: str
     user_type: Optional[str] = "patient"
+    lang: Optional[Literal["en", "fr"]] = None
 
 
 @app.post("/")
@@ -27,6 +28,7 @@ def followups_endpoint(request: FollowUpRequest):
             user_message=request.message,
             assistant_answer=request.answer,
             user_type=request.user_type or "patient",
+            lang=request.lang or "en",
         )
         return {"follow_ups": follow_ups}
     except Exception as exc:

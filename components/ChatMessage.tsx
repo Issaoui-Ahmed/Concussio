@@ -1,3 +1,5 @@
+"use client";
+
 import React from "react";
 import Image from "next/image";
 import ReactMarkdown from "react-markdown";
@@ -5,10 +7,16 @@ import remarkGfm from "remark-gfm";
 import { User } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { useLocale, useT } from "@/lib/i18n/LanguageProvider";
+import { ResourceLink } from "./ResourceLink";
 
 function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs));
 }
+
+// Defined at module scope: a fresh object here would remount every link on each render.
+// `a` points French answers at French resources — see lib/i18n/resourceLinks.ts.
+const MARKDOWN_COMPONENTS = { a: ResourceLink };
 
 const FUELIX_CITATION_HEADING_RE =
     /^\s*(?:#{1,6}\s*)?(?:[*_]{1,3})?\s*copilot\s+knowledge\s+base\s+citations\s*(?:[*_]{1,3})?\s*:?\s*$/i;
@@ -52,7 +60,8 @@ type Lang = "en" | "fr";
 interface ChatMessageProps {
     role: "user" | "assistant";
     content: string;
-    displayLang?: Lang;
+    /** The language the message was actually written in. */
+    lang?: Lang;
     translations?: Partial<Record<Lang, string>>;
     translationStatus?: "idle" | "loading" | "ready" | "error";
     followUps?: string[];
@@ -65,7 +74,7 @@ interface ChatMessageProps {
 export function ChatMessage({
     role,
     content,
-    displayLang = "en",
+    lang,
     translations,
     translationStatus = "idle",
     followUps = [],
@@ -74,11 +83,28 @@ export function ChatMessage({
     onFollowUpClick,
     followUpsDisabled = false,
 }: ChatMessageProps) {
+    const { locale } = useLocale();
+    const t = useT();
     const isUser = role === "user";
-    const baseContent = translations?.[displayLang] ?? content;
+
+    // User messages are never translated — we don't put words in the user's mouth. Assistant
+    // messages resolve against the app locale, but only when the original is in a *different*
+    // language: the previous `translations[lang] ?? content` could show a round-trip
+    // translation of text that was already correct.
+    const baseContent = isUser
+        ? content
+        : lang === locale
+            ? content
+            : translations?.[locale] ?? content;
+
     const displayContent = isUser ? baseContent : stripFuelIxCitationBlocks(baseContent);
-    const displayFollowUps = followUpTranslations?.[displayLang] ?? followUps;
-    const isTranslating = translationStatus === "loading" && !(translations && translations[displayLang]);
+    const displayFollowUps =
+        lang === locale ? followUps : followUpTranslations?.[locale] ?? followUps;
+    const isTranslating =
+        !isUser &&
+        lang !== locale &&
+        translationStatus === "loading" &&
+        !translations?.[locale];
     const shouldRenderFollowUps =
         !isUser && (
             followUpsStatus === "loading" ||
@@ -115,16 +141,20 @@ export function ChatMessage({
                 <div className="prose prose-slate max-w-none flex-1 leading-7 text-gray-800">
                     {/* Added name label */}
                     <div className="font-semibold text-sm mb-1 text-gray-900">
-                        {isUser ? "You" : "ConcussCare"}
+                        {isUser ? t("message.you") : t("message.assistant")}
                     </div>
                     {isTranslating && (
-                        <div className="mb-2 text-xs italic text-gray-400 not-prose">Translating…</div>
+                        <div className="mb-2 text-xs italic text-gray-400 not-prose">
+                            {t("message.translating")}
+                        </div>
                     )}
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{displayContent}</ReactMarkdown>
+                    <ReactMarkdown remarkPlugins={[remarkGfm]} components={MARKDOWN_COMPONENTS}>
+                        {displayContent}
+                    </ReactMarkdown>
 
                     {shouldRenderFollowUps && (
                         <div className="mt-5 border-t border-gray-100 pt-4 not-prose">
-                            <h3 className="text-base font-semibold text-gray-800">Ask a follow up</h3>
+                            <h3 className="text-base font-semibold text-gray-800">{t("message.askFollowUp")}</h3>
                             <div className="mt-3 space-y-2">
                                 {followUpsStatus === "loading" ? (
                                     Array.from({ length: 3 }).map((_, idx) => (

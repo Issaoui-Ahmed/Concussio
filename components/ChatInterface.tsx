@@ -1,20 +1,23 @@
 
 "use client";
 
-import React, { useState, useRef, useEffect, useMemo } from "react";
+import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import Image from "next/image";
 import { ChatMessage } from "./ChatMessage";
 import { Sidebar, Session } from "./Sidebar";
 import { Send } from "lucide-react";
+import { useLocale, useT, type Locale } from "@/lib/i18n/LanguageProvider";
+import { detectLanguage } from "@/lib/i18n/detect";
 
 type FollowUpsStatus = "idle" | "loading" | "ready" | "error";
-type Lang = "en" | "fr";
+type Lang = Locale;
 type TranslationStatus = "idle" | "loading" | "ready" | "error";
 
 interface Message {
     id?: string;
     role: "user" | "assistant";
     content: string;
+    /** The language this message was actually written in. Set at creation, never inferred later. */
     lang?: Lang;
     translations?: Partial<Record<Lang, string>>;
     translationStatus?: TranslationStatus;
@@ -25,38 +28,84 @@ interface Message {
 
 const createMessageId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 
-const DEFAULT_FOLLOW_UPS = [
-    "Can you explain that in simpler terms?",
-    "What should I do first?",
-    "What warning signs mean I should seek urgent care?",
-];
+const SESSIONS_KEY = "concussio_sessions_v2";
+const LEGACY_SESSIONS_KEY = "concussio_sessions";
 
-const normalizeFollowUps = (items: string[]) => {
-    const deduped = Array.from(
-        new Set(
-            items
-                .map(item => item.trim())
-                .filter(item => item.length > 0)
-        )
-    );
+// Roughly the character budget for one /api/translate request. Long sessions are split so a
+// single batch never grows large enough for the model to drop or merge items.
+const TRANSLATE_CHUNK_CHARS = 12000;
 
-    for (const fallback of DEFAULT_FOLLOW_UPS) {
-        if (deduped.length >= 3) break;
-        if (!deduped.includes(fallback)) {
-            deduped.push(fallback);
+const USER_TYPES = [
+    "Healthcare Professional",
+    "Parent or Caregiver",
+    "Youth",
+    "Teacher",
+    "Coach",
+] as const;
+
+// The English string is the wire value: it routes to the Fuel IX assistant
+// (ASSISTANT_ENV_BY_USER_TYPE) and selects the prompt personalization. Only the label is
+// translated. Typing it as the union keeps `userType.${userType}` a checked dictionary key.
+type UserType = (typeof USER_TYPES)[number];
+
+/**
+ * Sessions written before the global-locale rework carried a per-chat `displayLang`. The
+ * cached `translations` on each message are still valid, so they are kept; only the dead
+ * field is dropped.
+ */
+const loadStoredSessions = (): Session[] => {
+    const parse = (raw: string | null): Session[] | null => {
+        if (!raw) return null;
+        try {
+            const parsed = JSON.parse(raw);
+            return Array.isArray(parsed) ? parsed : null;
+        } catch {
+            return null;
         }
-    }
+    };
 
-    return deduped.slice(0, 3);
+    const current = parse(localStorage.getItem(SESSIONS_KEY));
+    if (current) return current;
+
+    const legacy = parse(localStorage.getItem(LEGACY_SESSIONS_KEY));
+    if (!legacy) return [];
+
+    return legacy.map(session => {
+        const { displayLang, ...rest } = session as Session & { displayLang?: Lang };
+        void displayLang;
+        return rest as Session;
+    });
 };
 
 export function ChatInterface() {
+    const { locale, setLocale } = useLocale();
+    const t = useT();
+
     const [sessions, setSessions] = useState<Session[]>([]);
     const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
     const [input, setInput] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [elapsedTime, setElapsedTime] = useState(0);
+    const [userType, setUserType] = useState<UserType>("Healthcare Professional");
     const bottomRef = useRef<HTMLDivElement>(null);
+
+    // Latest values for async work that must not read a stale closure.
+    const sessionsRef = useRef<Session[]>(sessions);
+    const localeRef = useRef<Locale>(locale);
+    const inFlightRef = useRef<Set<string>>(new Set());
+
+    useEffect(() => {
+        sessionsRef.current = sessions;
+    }, [sessions]);
+
+    useEffect(() => {
+        localeRef.current = locale;
+    }, [locale]);
+
+    const defaultFollowUps = useMemo(
+        () => [t("followUps.default.1"), t("followUps.default.2"), t("followUps.default.3")],
+        [t]
+    );
 
     // Timer for loading state
     useEffect(() => {
@@ -73,37 +122,25 @@ export function ChatInterface() {
         };
     }, [isLoading]);
 
-    // Initial Load from LocalStorage
+    // Initial load from localStorage
+    const [hydrated, setHydrated] = useState(false);
     useEffect(() => {
-        const storedSessions = localStorage.getItem("concussio_sessions");
-        if (storedSessions) {
-            try {
-                const parsed = JSON.parse(storedSessions);
-                setSessions(parsed);
-                if (parsed.length > 0) {
-                    // Automatically select most recent or first? 
-                    // Let's not auto-select to show empty state like ChatGPT unless they have one
-                    // Actually, ChatGPT usually opens clean or last one. Let's start clean if not specified.
-                }
-            } catch (e) {
-                console.error("Failed to parse sessions", e);
-            }
-        }
+        setSessions(loadStoredSessions());
+        setHydrated(true);
     }, []);
 
-    // Save to LocalStorage whenever sessions change
+    // Save to localStorage whenever sessions change (but not before hydration, or we would
+    // immediately overwrite the stored sessions with an empty array).
     useEffect(() => {
-        localStorage.setItem("concussio_sessions", JSON.stringify(sessions));
-    }, [sessions]);
+        if (!hydrated) return;
+        localStorage.setItem(SESSIONS_KEY, JSON.stringify(sessions));
+    }, [sessions, hydrated]);
 
-    // Scroll to bottom when messages change
     const currentSession = sessions.find(s => s.id === currentSessionId);
     const messages: Message[] = useMemo(
         () => (currentSession ? (currentSession.messages as Message[]) : []),
         [currentSession]
     );
-
-    const displayLang: Lang = currentSession?.displayLang ?? "en";
 
     useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -133,162 +170,199 @@ export function ChatInterface() {
         setCurrentSessionId(id);
     };
 
-    const [userType, setUserType] = useState<string>("Healthcare Professional");
+    const normalizeFollowUps = useCallback(
+        (items: string[]) => {
+            const deduped = Array.from(
+                new Set(items.map(item => item.trim()).filter(item => item.length > 0))
+            );
+            for (const fallback of defaultFollowUps) {
+                if (deduped.length >= 3) break;
+                if (!deduped.includes(fallback)) deduped.push(fallback);
+            }
+            return deduped.slice(0, 3);
+        },
+        [defaultFollowUps]
+    );
 
-    const updateFollowUpsForMessage = (
-        sessionId: string,
-        messageId: string,
-        followUps: string[],
-        followUpsStatus: FollowUpsStatus
-    ) => {
-        setSessions(prev =>
-            prev.map(s => {
-                if (s.id !== sessionId) return s;
-                return {
-                    ...s,
-                    messages: s.messages.map((message) => {
-                        const typedMessage = message as Message;
-                        if (typedMessage.id !== messageId) return typedMessage;
-                        return {
-                            ...typedMessage,
-                            followUps,
-                            followUpsStatus,
-                        };
-                    }),
-                };
-            })
-        );
-    };
+    const patchMessage = useCallback(
+        (sessionId: string, messageId: string, patch: (message: Message) => Message) => {
+            setSessions(prev =>
+                prev.map(s => {
+                    if (s.id !== sessionId) return s;
+                    return {
+                        ...s,
+                        messages: s.messages.map(message => {
+                            const typedMessage = message as Message;
+                            if (typedMessage.id !== messageId) return typedMessage;
+                            return patch(typedMessage);
+                        }),
+                    };
+                })
+            );
+        },
+        []
+    );
 
-    const patchMessage = (
-        sessionId: string,
-        messageId: string,
-        patch: (message: Message) => Message
-    ) => {
-        setSessions(prev =>
-            prev.map(s => {
-                if (s.id !== sessionId) return s;
-                return {
-                    ...s,
-                    messages: s.messages.map(message => {
-                        const typedMessage = message as Message;
-                        if (typedMessage.id !== messageId) return typedMessage;
-                        return patch(typedMessage);
-                    }),
-                };
-            })
-        );
-    };
+    const callTranslate = useCallback(
+        async (texts: string[], targetLang: Lang): Promise<string[] | null> => {
+            try {
+                const res = await fetch("/api/translate", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ texts, target_lang: targetLang }),
+                });
+                if (!res.ok) throw new Error("Failed to translate");
+                const data = await res.json();
+                if (!data || !Array.isArray(data.texts) || data.texts.length !== texts.length) {
+                    return null;
+                }
+                return data.texts as string[];
+            } catch (error) {
+                console.error(error);
+                return null;
+            }
+        },
+        []
+    );
 
-    const callTranslate = async (
-        texts: string[],
-        targetLang?: Lang
-    ): Promise<{ source_lang: Lang; target_lang: Lang; texts: string[] } | null> => {
-        try {
-            const res = await fetch("/api/translate", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ texts, target_lang: targetLang }),
-            });
-            if (!res.ok) throw new Error("Failed to translate");
-            const data = await res.json();
-            if (!data || !Array.isArray(data.texts)) return null;
-            return data as { source_lang: Lang; target_lang: Lang; texts: string[] };
-        } catch (error) {
-            console.error(error);
-            return null;
-        }
-    };
+    /**
+     * Backfill the current session into `lang`.
+     *
+     * Only assistant content and follow-ups are translated — user messages and session titles
+     * stay in whatever the user typed. Work is batched into as few requests as possible,
+     * deduplicated while in flight, and discarded if the locale changed before it resolved.
+     */
+    const ensureSessionTranslated = useCallback(
+        async (sessionId: string, lang: Lang) => {
+            const session = sessionsRef.current.find(s => s.id === sessionId);
+            if (!session) return;
 
-    // Eager: translate a message's content into the opposite language and cache both sides.
-    const translateMessageContent = async (sessionId: string, messageId: string, content: string) => {
-        if (!content.trim()) return;
-        patchMessage(sessionId, messageId, m => ({ ...m, translationStatus: "loading" }));
-        const result = await callTranslate([content]);
-        if (!result) {
-            patchMessage(sessionId, messageId, m => ({ ...m, translationStatus: "error" }));
-            return;
-        }
-        const { source_lang: src, target_lang: tgt, texts } = result;
-        patchMessage(sessionId, messageId, m => ({
-            ...m,
-            lang: src,
-            translations: { ...(m.translations ?? {}), [src]: content, [tgt]: texts[0] ?? content },
-            translationStatus: "ready",
-        }));
-        // Set the chat's toggle to the conversation's language the first time we detect it.
-        setSessions(prev => prev.map(s => (s.id === sessionId && !s.displayLang ? { ...s, displayLang: src } : s)));
-    };
+            type Unit = { messageId: string; kind: "content" | "followUps"; texts: string[] };
+            const units: Unit[] = [];
 
-    // Eager: translate the follow-up suggestions into the opposite language and cache both sides.
-    const translateMessageFollowUps = async (sessionId: string, messageId: string, followUps: string[]) => {
-        if (!followUps.length) return;
-        const result = await callTranslate(followUps);
-        if (!result) return;
-        const { source_lang: src, target_lang: tgt, texts } = result;
-        patchMessage(sessionId, messageId, m => ({
-            ...m,
-            followUpTranslations: { ...(m.followUpTranslations ?? {}), [src]: followUps, [tgt]: texts },
-        }));
-    };
+            for (const raw of session.messages as Message[]) {
+                const message = raw;
+                if (!message.id || message.role !== "assistant") continue;
+                if (message.lang === lang) continue;
 
-    // Lazy/correctness: when the toggle flips, ensure every message has the target language ready.
-    const ensureSessionTranslated = async (sessionId: string, lang: Lang) => {
-        const session = sessions.find(s => s.id === sessionId);
-        if (!session) return;
-        const sessionMessages = session.messages as Message[];
-        await Promise.all(
-            sessionMessages.map(async message => {
-                if (!message.id) return;
-                const messageId = message.id;
-                const needsContent = Boolean(message.content?.trim()) && !message.translations?.[lang];
+                const contentKey = `${message.id}:content:${lang}`;
+                if (
+                    message.content?.trim() &&
+                    !message.translations?.[lang] &&
+                    !inFlightRef.current.has(contentKey)
+                ) {
+                    units.push({ messageId: message.id, kind: "content", texts: [message.content] });
+                }
+
                 const followUps = message.followUps ?? [];
-                const needsFollowUps = followUps.length > 0 && !message.followUpTranslations?.[lang];
+                const followUpsKey = `${message.id}:followUps:${lang}`;
+                if (
+                    followUps.length > 0 &&
+                    !message.followUpTranslations?.[lang] &&
+                    !inFlightRef.current.has(followUpsKey)
+                ) {
+                    units.push({ messageId: message.id, kind: "followUps", texts: followUps });
+                }
+            }
 
-                if (needsContent) {
-                    patchMessage(sessionId, messageId, m => ({ ...m, translationStatus: "loading" }));
-                    const result = await callTranslate([message.content], lang);
-                    if (result) {
-                        patchMessage(sessionId, messageId, m => ({
+            if (units.length === 0) return;
+
+            for (const unit of units) {
+                inFlightRef.current.add(`${unit.messageId}:${unit.kind}:${lang}`);
+                if (unit.kind === "content") {
+                    patchMessage(sessionId, unit.messageId, m => ({
+                        ...m,
+                        translationStatus: "loading",
+                    }));
+                }
+            }
+
+            // Pack units into chunks that stay under the character budget. A unit is never
+            // split across chunks, so the index mapping back to messages stays simple.
+            const chunks: Unit[][] = [];
+            let chunk: Unit[] = [];
+            let chunkChars = 0;
+            for (const unit of units) {
+                const unitChars = unit.texts.reduce((sum, text) => sum + text.length, 0);
+                if (chunk.length > 0 && chunkChars + unitChars > TRANSLATE_CHUNK_CHARS) {
+                    chunks.push(chunk);
+                    chunk = [];
+                    chunkChars = 0;
+                }
+                chunk.push(unit);
+                chunkChars += unitChars;
+            }
+            if (chunk.length > 0) chunks.push(chunk);
+
+            for (const batch of chunks) {
+                const flat = batch.flatMap(unit => unit.texts);
+                const translated = await callTranslate(flat, lang);
+
+                // The user toggled again while this was in flight — drop the result.
+                if (localeRef.current !== lang) {
+                    for (const unit of batch) {
+                        inFlightRef.current.delete(`${unit.messageId}:${unit.kind}:${lang}`);
+                    }
+                    continue;
+                }
+
+                let cursor = 0;
+                for (const unit of batch) {
+                    const slice = translated?.slice(cursor, cursor + unit.texts.length) ?? null;
+                    cursor += unit.texts.length;
+                    inFlightRef.current.delete(`${unit.messageId}:${unit.kind}:${lang}`);
+
+                    if (!slice) {
+                        if (unit.kind === "content") {
+                            patchMessage(sessionId, unit.messageId, m => ({
+                                ...m,
+                                translationStatus: "error",
+                            }));
+                        }
+                        continue;
+                    }
+
+                    if (unit.kind === "content") {
+                        patchMessage(sessionId, unit.messageId, m => ({
                             ...m,
-                            lang: m.lang ?? result.source_lang,
-                            translations: {
-                                ...(m.translations ?? {}),
-                                [result.source_lang]: m.translations?.[result.source_lang] ?? message.content,
-                                [lang]: result.texts[0] ?? message.content,
-                            },
+                            translations: { ...(m.translations ?? {}), [lang]: slice[0] ?? m.content },
                             translationStatus: "ready",
                         }));
                     } else {
-                        patchMessage(sessionId, messageId, m => ({ ...m, translationStatus: "error" }));
-                    }
-                }
-
-                if (needsFollowUps) {
-                    const result = await callTranslate(followUps, lang);
-                    if (result) {
-                        patchMessage(sessionId, messageId, m => ({
+                        patchMessage(sessionId, unit.messageId, m => ({
                             ...m,
-                            followUpTranslations: { ...(m.followUpTranslations ?? {}), [lang]: result.texts },
+                            followUpTranslations: { ...(m.followUpTranslations ?? {}), [lang]: slice },
                         }));
                     }
                 }
-            })
-        );
-    };
+            }
+        },
+        [callTranslate, patchMessage]
+    );
 
-    const handleToggleLang = (lang: Lang) => {
+    // One code path for both triggers: a manual toggle and an auto-detected switch both just
+    // change `locale`, and this backfills whatever the open chat is missing.
+    useEffect(() => {
         if (!currentSessionId) return;
-        setSessions(prev => prev.map(s => (s.id === currentSessionId ? { ...s, displayLang: lang } : s)));
-        void ensureSessionTranslated(currentSessionId, lang);
-    };
+        void ensureSessionTranslated(currentSessionId, locale);
+    }, [locale, currentSessionId, ensureSessionTranslated]);
 
     const requestFollowUps = async (params: {
         sessionId: string;
         assistantMessageId: string;
         userMessage: string;
         answer: string;
+        lang: Lang;
     }) => {
+        const applyFollowUps = (items: string[]) => {
+            const normalized = normalizeFollowUps(items);
+            patchMessage(params.sessionId, params.assistantMessageId, m => ({
+                ...m,
+                followUps: normalized,
+                followUpsStatus: "ready",
+            }));
+        };
+
         try {
             const followUpResponse = await fetch("/api/followups", {
                 method: "POST",
@@ -297,6 +371,7 @@ export function ChatInterface() {
                     message: params.userMessage,
                     answer: params.answer,
                     user_type: userType,
+                    lang: params.lang,
                 }),
             });
 
@@ -311,30 +386,24 @@ export function ChatInterface() {
                     .slice(0, 3)
                 : [];
 
-            const normalized = normalizeFollowUps(followUps);
-            updateFollowUpsForMessage(
-                params.sessionId,
-                params.assistantMessageId,
-                normalized,
-                "ready"
-            );
-            void translateMessageFollowUps(params.sessionId, params.assistantMessageId, normalized);
+            applyFollowUps(followUps);
         } catch (error) {
             console.error(error);
-            const normalized = normalizeFollowUps([]);
-            updateFollowUpsForMessage(
-                params.sessionId,
-                params.assistantMessageId,
-                normalized,
-                "ready"
-            );
-            void translateMessageFollowUps(params.sessionId, params.assistantMessageId, normalized);
+            applyFollowUps([]);
         }
     };
 
     const sendMessage = async (rawText: string, source: "input" | "followup" = "input") => {
         const trimmedInput = rawText.trim();
         if (!trimmedInput || isLoading) return;
+
+        // Auto-detect drives the global toggle. Only a confident detection may override the
+        // locale — short or ambiguous input must not undo a toggle the user just set.
+        const detection = detectLanguage(trimmedInput);
+        const resolvedLang: Lang = detection.confident ? detection.lang : locale;
+        if (detection.confident && detection.lang !== locale) {
+            setLocale(detection.lang);
+        }
 
         let activeSessionId = currentSessionId;
         if (!activeSessionId) {
@@ -345,7 +414,7 @@ export function ChatInterface() {
             id: createMessageId(),
             role: "user",
             content: trimmedInput,
-            translationStatus: "loading",
+            lang: resolvedLang,
         };
 
         setSessions(prev => prev.map(s => {
@@ -358,8 +427,6 @@ export function ChatInterface() {
             }
             return s;
         }));
-
-        void translateMessageContent(activeSessionId, userMessage.id as string, userMessage.content);
 
         if (source === "input") {
             setInput("");
@@ -377,7 +444,7 @@ export function ChatInterface() {
                     message: userMessage.content,
                     history: historyPayload,
                     user_type: userType,
-                    provider_mode: "fuelix",
+                    lang: resolvedLang,
                 }),
             });
 
@@ -388,11 +455,15 @@ export function ChatInterface() {
 
             const data = await response.json();
             const assistantMessageId = createMessageId();
+
+            // Generated directly in `resolvedLang`, so no translation is needed unless the
+            // user later switches the locale.
             const assistantMessage: Message = {
                 id: assistantMessageId,
                 role: "assistant",
                 content: data.answer,
-                translationStatus: "loading",
+                lang: resolvedLang,
+                translationStatus: "idle",
                 followUps: [],
                 followUpsStatus: "loading",
             };
@@ -404,21 +475,20 @@ export function ChatInterface() {
                 return s;
             }));
 
-            void translateMessageContent(activeSessionId, assistantMessageId, data.answer);
-
             void requestFollowUps({
                 sessionId: activeSessionId,
                 assistantMessageId,
                 userMessage: userMessage.content,
                 answer: data.answer,
+                lang: resolvedLang,
             });
         } catch (error: unknown) {
             console.error(error);
-            const errorMessage = error instanceof Error ? error.message : "Sorry, error occurred.";
             const assistantErrorMessage: Message = {
                 id: createMessageId(),
                 role: "assistant",
-                content: errorMessage,
+                content: t("chat.errorGeneric"),
+                lang: resolvedLang,
                 followUps: [],
                 followUpsStatus: "idle",
             };
@@ -453,29 +523,6 @@ export function ChatInterface() {
             {/* Main Content */}
             <div className="flex-1 flex flex-col h-full relative">
 
-                {/* Language toggle (applies to the whole chat) */}
-                {messages.length > 0 && (
-                    <div className="flex items-center justify-end gap-2 border-b border-gray-100 bg-white/70 px-4 py-2 backdrop-blur">
-                        <span className="text-xs font-medium text-gray-400">Language</span>
-                        <div className="inline-flex rounded-lg border border-gray-200 bg-white p-0.5">
-                            {(["en", "fr"] as Lang[]).map(lang => (
-                                <button
-                                    key={lang}
-                                    type="button"
-                                    onClick={() => handleToggleLang(lang)}
-                                    className={`rounded-md px-3 py-1 text-xs font-semibold transition-colors ${
-                                        displayLang === lang
-                                            ? "bg-[#00417d] text-white"
-                                            : "text-gray-600 hover:bg-gray-100"
-                                    }`}
-                                >
-                                    {lang.toUpperCase()}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
                 {/* Chat Area */}
                 <div className="flex-1 overflow-y-auto w-full">
                     <div className="flex flex-col min-h-full pb-36 pt-10">
@@ -491,8 +538,8 @@ export function ChatInterface() {
                                         />
                                     </div>
                                 </div>
-                                <h1 className="text-3xl font-bold mb-2 text-gray-800">ConcussCare</h1>
-                                <p className="text-gray-500 max-w-md">Your trusted assistant for concussion healthcare guidelines and patient support.</p>
+                                <h1 className="text-3xl font-bold mb-2 text-gray-800">{t("chat.welcomeTitle")}</h1>
+                                <p className="text-gray-500 max-w-md">{t("chat.welcomeTagline")}</p>
                             </div>
                         ) : (
                             <div className="flex flex-col gap-6 w-full max-w-4xl mx-auto px-4">
@@ -501,7 +548,7 @@ export function ChatInterface() {
                                         key={msg.id ?? `${idx}-${msg.role}`}
                                         role={msg.role}
                                         content={msg.content}
-                                        displayLang={displayLang}
+                                        lang={msg.lang}
                                         translations={msg.translations}
                                         translationStatus={msg.translationStatus}
                                         followUps={msg.followUps}
@@ -520,7 +567,7 @@ export function ChatInterface() {
                                             </div>
                                             <div className="space-y-2 flex-1 max-w-[200px] flex items-center">
                                                 <span className="text-sm text-gray-500 font-medium tracking-wide">
-                                                    Thinking... {elapsedTime.toFixed(1)}s
+                                                    {t("chat.thinking", { seconds: elapsedTime.toFixed(1) })}
                                                 </span>
                                             </div>
                                         </div>
@@ -535,19 +582,21 @@ export function ChatInterface() {
                 {/* Input Area */}
                 <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-[#F7F7F9] via-[#F7F7F9] to-transparent pt-10 pb-6 px-4">
                     <div className="max-w-3xl mx-auto flex gap-4 items-end">
-                        {/* User Type Dropdown */}
+                        {/* User Type Dropdown. The `value` stays an English key — it routes to the
+                            Fuel IX assistant and the prompt personalization; only the label is
+                            translated. */}
                         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-1 flex shrink-0 mb-1">
                             <select
                                 value={userType}
-                                onChange={(e) => setUserType(e.target.value)}
+                                onChange={(e) => setUserType(e.target.value as UserType)}
                                 disabled={messages.length > 0}
                                 className="px-3 py-2 rounded-lg text-sm font-medium bg-transparent border-none focus:ring-0 text-gray-700 cursor-pointer disabled:opacity-50"
                             >
-                                <option value="Healthcare Professional">Healthcare Professional</option>
-                                <option value="Parent or Caregiver">Parent or Caregiver</option>
-                                <option value="Youth">Youth</option>
-                                <option value="Teacher">Teacher</option>
-                                <option value="Coach">Coach</option>
+                                {USER_TYPES.map(value => (
+                                    <option key={value} value={value}>
+                                        {t(`userType.${value}`)}
+                                    </option>
+                                ))}
                             </select>
                         </div>
 
@@ -556,7 +605,9 @@ export function ChatInterface() {
                                 type="text"
                                 value={input}
                                 onChange={(e) => setInput(e.target.value)}
-                                placeholder={`Message as ${userType}...`}
+                                placeholder={t("chat.inputPlaceholder", {
+                                    userType: t(`userType.${userType}`),
+                                })}
                                 className="w-full bg-transparent text-gray-800 placeholder-gray-400 border-none focus:ring-0 px-4 py-3 pr-12 text-base"
                                 disabled={isLoading}
                                 autoFocus
@@ -564,6 +615,7 @@ export function ChatInterface() {
                             <button
                                 type="submit"
                                 disabled={isLoading || !input.trim()}
+                                aria-label={t("chat.send")}
                                 className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-[#00417d] text-white rounded-lg hover:bg-[#002a52] disabled:opacity-50 disabled:hover:bg-[#00417d] transition-colors"
                             >
                                 <Send className="w-4 h-4" />

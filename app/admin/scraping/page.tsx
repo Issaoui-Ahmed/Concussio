@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, Download, Loader2, RefreshCw } from "lucide-react";
+import { ResourceWorkbench } from "@/components/ResourceWorkbench";
 
 interface ScrapedDomain {
   domain: string;
@@ -11,13 +12,9 @@ interface ScrapedDomain {
   recommendation_text: string;
 }
 
-interface ScrapedLivingGuidelineTool {
-  title: string;
-  url: string;
-  pdf_url?: string | null;
-  pdf_urls?: string[];
-}
-
+// The response also carries `living_guideline_tools`, which this page no longer reads: those are
+// English resources, and they now appear once, in the pairing workbench. The ZIP download below
+// still uses them, but server-side from its own snapshot.
 interface ScrapingResponse {
   updated_at: string | null;
   refresh_interval_seconds: number;
@@ -26,7 +23,6 @@ interface ScrapingResponse {
   domain_count: number;
   domains: ScrapedDomain[];
   living_guideline_tools_count: number;
-  living_guideline_tools: ScrapedLivingGuidelineTool[];
 }
 
 const REFRESH_MS = 60_000;
@@ -132,7 +128,7 @@ export default function AdminScrapingPage() {
             <div>
               <h1 className="text-2xl font-bold text-gray-800">Scraping</h1>
               <p className="text-sm text-gray-500">
-                Domains, recommendations, and living guideline tools from
+                Resources, pairings, and guideline recommendations scraped from
                 pedsconcussion.com (auto-refresh every minute).
               </p>
             </div>
@@ -171,7 +167,8 @@ export default function AdminScrapingPage() {
             </span>
             <span>
               <strong className="text-gray-800">Living tools:</strong>{" "}
-              {data?.living_guideline_tools_count ?? 0}
+              {data?.living_guideline_tools_count ?? 0}{" "}
+              <span className="text-gray-400">(in the ZIP)</span>
             </span>
             <span>
               <strong className="text-gray-800">Last update:</strong>{" "}
@@ -193,6 +190,17 @@ export default function AdminScrapingPage() {
           )}
         </div>
 
+        {/*
+          The single view of the Living Guideline Tools and their French counterparts. Loads
+          independently of the recommendations scrape below, so it appears immediately.
+
+          Its English side is the same Living Guideline Tools scrape the ZIP above carries, so
+          the two counts agree by construction rather than by coincidence. Both narrow the 96
+          links on the Tools & Resources page down to that one section; the rest is third-party
+          material with no French counterpart to pair against.
+        */}
+        <ResourceWorkbench />
+
         {isInitialLoading ? (
           <div className="rounded-2xl border border-gray-100 bg-white p-12 text-center text-gray-500 shadow-sm">
             <Loader2 className="mx-auto h-6 w-6 animate-spin text-[#00417d]" />
@@ -200,61 +208,12 @@ export default function AdminScrapingPage() {
           </div>
         ) : (
           <div className="space-y-4">
-            <section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-              <h2 className="text-lg font-semibold text-gray-900">Living Guideline Tools</h2>
-              <p className="mt-1 text-sm text-gray-500">
-                Links from the{" "}
-                <a
-                  href="https://pedsconcussion.com/tools-resources/"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-[#00417d] hover:underline"
-                >
-                  Tools &amp; Resources page
-                </a>{" "}
-                under the heading &quot;Living Guideline Tools:&quot;.
-              </p>
-
-              {data?.living_guideline_tools?.length ? (
-                <ul className="mt-4 space-y-2 text-sm">
-                  {data.living_guideline_tools.map((tool, index) => (
-                    <li key={`${tool.url}-${index}`} className="text-gray-700">
-                      <span className="mr-2 font-medium text-gray-900">{index + 1}.</span>
-                      <a
-                        href={tool.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-[#00417d] hover:underline"
-                      >
-                        {tool.title}
-                      </a>
-                      {tool.pdf_url && (
-                        <div className="ml-6 mt-1">
-                          <span className="font-medium text-gray-900">Primary PDF:</span>{" "}
-                          <a
-                            href={tool.pdf_url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-[#00417d] hover:underline"
-                          >
-                            {tool.pdf_url}
-                          </a>
-                        </div>
-                      )}
-                      {Array.isArray(tool.pdf_urls) && tool.pdf_urls.length > 1 && (
-                        <div className="ml-6 mt-1 text-xs text-gray-600">
-                          Additional PDF links found: {tool.pdf_urls.length - 1}
-                        </div>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="mt-4 text-sm text-gray-500">
-                  No links found for the Living Guideline Tools section.
-                </p>
-              )}
-            </section>
+            <h2 className="px-1 pt-2 text-lg font-semibold text-gray-900">
+              Guideline recommendations
+              <span className="ml-2 text-sm font-normal text-gray-400">
+                {data?.domain_count ?? 0} domains
+              </span>
+            </h2>
 
             {data?.domains.map((item) => (
               <article

@@ -14,6 +14,9 @@ load_dotenv()
 DEFAULT_FUELIX_BASE_URL = "https://api.fuelix.ai/v1"
 DEFAULT_REASONING_EFFORT = "low"
 TERMINAL_RUN_STATES = {"completed", "failed", "cancelled", "expired", "incomplete"}
+# Fuel IX enforces a per-minute request quota, so polling has to stay modest even though a
+# faster first poll is what makes short runs feel quick.
+RATE_LIMIT_BACKOFF_SECONDS = 10.0
 FUELIX_CITATION_HEADING_RE = re.compile(
     r"^\s*(?:#{1,6}\s*)?(?:[*_]{1,3})?\s*(?:<<\s*)?copilot(?:\s*>>)?\s+knowledge\s+base\s+citations\s*(?:[*_]{1,3})?\s*:?\s*$",
     re.IGNORECASE,
@@ -76,6 +79,18 @@ def _get_fuelix_product_id() -> Optional[str]:
     return value or None
 
 
+class FuelIXHTTPError(RuntimeError):
+    """A non-2xx response from Fuel IX.
+
+    Subclasses RuntimeError so existing ``except Exception`` / ``except RuntimeError``
+    handlers keep working, while callers that care can branch on ``status_code``.
+    """
+
+    def __init__(self, message: str, status_code: Optional[int] = None) -> None:
+        super().__init__(message)
+        self.status_code = status_code
+
+
 def _request_fuelix(
     method: str,
     endpoint_path: str,
@@ -113,7 +128,10 @@ def _request_fuelix(
         detail: Any = payload
         if isinstance(payload, dict):
             detail = payload.get("error") or payload.get("message") or payload.get("detail") or payload
-        raise RuntimeError(f"Fuel IX error ({response.status_code}): {detail}")
+        raise FuelIXHTTPError(
+            f"Fuel IX error ({response.status_code}): {detail}",
+            status_code=response.status_code,
+        )
 
     return payload
 
@@ -209,15 +227,37 @@ def _poll_terminal_run(
     run_id: str,
     *,
     timeout_seconds: int = 240,
-    poll_interval_seconds: float = 1.5,
+    initial_poll_seconds: float = 0.5,
+    max_poll_seconds: float = 1.5,
 ) -> Dict[str, Any]:
+    """Poll until the run reaches a terminal state.
+
+    Backs off from ``initial_poll_seconds`` to ``max_poll_seconds`` rather than sleeping a
+    flat 1.5s: short runs finish well under a second, and a flat interval spent up to that
+    long waiting after the answer was already ready.
+
+    A 429 here is NOT fatal. The run keeps executing on Fuel IX regardless of whether we
+    manage to poll it, so being briefly rate-limited means "ask again later", not "the
+    request failed" — previously it aborted an answer that was already being generated.
+    """
     started_at = time.perf_counter()
+    interval = initial_poll_seconds
     while (time.perf_counter() - started_at) < timeout_seconds:
-        payload = _request_fuelix("GET", f"/threads/{thread_id}/runs/{run_id}")
+        try:
+            payload = _request_fuelix("GET", f"/threads/{thread_id}/runs/{run_id}")
+        except FuelIXHTTPError as exc:
+            if exc.status_code != 429:
+                raise
+            # Quota window is per-minute; wait out a chunk of it rather than hammering.
+            time.sleep(max(interval, RATE_LIMIT_BACKOFF_SECONDS))
+            interval = max_poll_seconds
+            continue
+
         status = payload.get("status") if isinstance(payload, dict) else None
         if isinstance(status, str) and status in TERMINAL_RUN_STATES:
             return payload
-        time.sleep(poll_interval_seconds)
+        time.sleep(interval)
+        interval = min(interval * 1.6, max_poll_seconds)
     raise RuntimeError("Fuel IX run polling timed out.")
 
 
@@ -294,11 +334,19 @@ def fuelix_chat_completion(
 def generate_fuelix_answer(
     user_query: str,
     user_type: Optional[str],
+    lang: Optional[str] = None,
+    history: Optional[List[Dict[str, str]]] = None,
 ) -> Dict[str, Any]:
+    """Run one question through the assistant.
+
+    ``history`` is the conversation BEFORE ``user_query``; it is folded into the seeded user
+    message so follow-ups like "and for children?" resolve. Each call still creates a fresh
+    thread — no thread reuse across turns.
+    """
     started = time.perf_counter()
     normalized_user_type = normalize_user_type(user_type)
     assistant_id = resolve_assistant_id(normalized_user_type)
-    user_prompt = build_fuelix_user_prompt(user_query, normalized_user_type)
+    user_prompt = build_fuelix_user_prompt(user_query, normalized_user_type, lang, history)
 
     run_payload = _request_fuelix(
         "POST",

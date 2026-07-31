@@ -1,0 +1,34 @@
+**Changed (9)**
+- `pair:https://pedsconcussion.com/scat` — SCAT6; Outil d’évaluation des commotions cérébrales dans le sport, pour Adolescents (13 ans et +) et Adultes (2023)
+- `pair:https://pedsconcussion.com/scat-child` — SCAT6 Enfant; Outil d’évaluation des commotions cérébrales dans le sport, pour les enfants âgés de 8 à 12 ans (2023)
+- `pair:https://pedsconcussion.com/scoat` — SCOAT6; Outil d’évaluation des commotions cérébrales en cabinet – 6e édition. pour Adultes & Adolescents (13 ans et +) (2023)
+- `pair:https://pedsconcussion.com/tool-10-1post-concussion-vision-vestibular-and-oculomotor-disturbances-algorithm` — Algorithme de gestion des troubles de la vision, des troubles vestibulaires et des troubles oculomoteurs après une commotion cérébrale
+- `pair:https://pedsconcussion.com/tool-12-1-concussion-implications-and-interventions-for-the-classroom` — Répercussions des commotions cérébrales et interventions pour la salle de classe
+- `pair:https://pedsconcussion.com/tool-6-1-post-concussion-headache-algorithm-3` — Algorithme de gestion des maux de tête post-commotions cérébrales
+- `pair:https://pedsconcussion.com/tool-7-1-prolonged-post-concussion-sleep-disturbances-algorithm` — Algorithme de gestion pour les troubles du sommeil post-commotion prolongés
+- `pair:https://pedsconcussion.com/tool-8-1-post-concussion-mental-health-considerations-algorithm-3` — Algorithme des considérations sur la santé mentale après une commotion cérébrale
+- `pair:https://pedsconcussion.com/tool-8-2-2` — Algorithme de gestion des troubles de santé mentale prolongés
+
+**Removed (22)**
+- `pair:https://hollandbloorview.ca/concussion-handbook`
+- `pair:https://inesss.qc.ca/fileadmin/doc/INESSS/Rapports/Traumatologie/INESSS_pamphlet_Mild-traumatic-brain-injury.pdf`
+- `pair:https://montrealchildrenshospital.ca/wp-content/uploads/2024/04/2023-09_pads-dischargeforms_web_en.pdf`
+- `pair:https://panamclinic.org/wp-content/uploads/2020/01/Post-Concussion-Information-Sheet-Nunavut-Youth-English.pdf`
+- `pair:https://pedsconcussion.com/cheo-sleep-for-youth`
+- `pair:https://pedsconcussion.com/cheo-sleep-for-youth-handout`
+- `pair:https://pedsconcussion.com/crt6`
+- `pair:https://pedsconcussion.com/manage-acute-and-prolonged-concussion-symptoms-algorithm`
+- `pair:https://pedsconcussion.com/patient_information_sheet`
+- `pair:https://pedsconcussion.com/recognition`
+- `pair:https://pedsconcussion.com/return-to-activity-sport-school`
+- `pair:https://pedsconcussion.com/tool-15-1-considerations-for-telemedicine-and-virtual-care-algorithm`
+- `pair:https://pedsconcussion.com/tool-15-1-virtual-care-algorithm`
+- `pair:https://pedsconcussion.com/tool-15-2-considerations-for-a-virtual-physical-examination`
+- `pair:https://pedsconcussion.com/tool-2-6-post-concussion-information-sheet`
+- `pair:https://pedsconcussion.com/tool-2-6-post-concussion-information-sheet-2`
+- `pair:https://pedsconcussion.com/tool-6-1-post-concussion-headache-algorithm`
+- `pair:https://pedsconcussion.com/vce-manual`
+- `pair:https://pedsconcussion.com/wp-content/uploads/2019/07/Tool-1.3-Manage-Acute-and-Prolonged-Concussion-Symptoms-Algorithm.pdf`
+- `pair:https://pedsconcussion.com/wp-content/uploads/2022/06/Tool-12.1-Academic-accomodations.pdf`
+- `pair:https://resources.cattonline.com/files/return-to-activity-strategy`
+- `pair:https://resources.cattonline.com/files/return-to-school-strategy`

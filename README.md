@@ -29,7 +29,7 @@ Follow these instructions to set up the project locally.
 
 *   **Node.js** (v18+ recommended)
 *   **Python** (v3.9+ recommended)
-*   **OpenAI API Key**
+*   **Fuel IX API Key**
 
 ### 1. Installation
 
@@ -50,10 +50,9 @@ pip install -r requirements.txt
 
 ### 2. Configuration
 
-Create a `.env` file in the root directory and add your OpenAI API key. You can use `.env.example` as a template.
+Create a `.env` file in the root directory and add your Fuel IX API key. You can use `.env.example` as a template.
 
 ```env
-OPENAI_API_KEY=sk-your-api-key-here
 FUELIX_API_KEY=sk-your-fuelix-key-here
 FUELIX_API_BASE_URL=https://api.fuelix.ai/v1
 ```
@@ -82,8 +81,7 @@ This project is optimized for deployment on **Vercel**.
 2.  Import the project into Vercel.
 3.  Vercel will automatically detect the **Next.js** framework and the **Python** API in the `api/` directory.
 4.  Add environment variables in Vercel Project Settings:
-    * `OPENAI_API_KEY`
-    * `FUELIX_API_KEY` (required for the default root chat and Fuel IX admin pages)
+    * `FUELIX_API_KEY` (required for the root chat and the Fuel IX admin pages)
     * `FUELIX_API_BASE_URL` (optional, default is `https://api.fuelix.ai/v1`)
     * `FUELIX_PRODUCT_ID` (optional, default is `core`)
 5.  Deploy!

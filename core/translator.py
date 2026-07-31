@@ -4,10 +4,51 @@ import re
 from typing import Any, Dict, List, Optional
 
 from core.fuelix_chat import fuelix_chat_completion
+from core.prompts import CANONICAL_HEADINGS
 
 
 DEFAULT_TRANSLATE_MODEL = "gpt-5.2"
 SUPPORTED_LANGS = {"en", "fr"}
+
+# Terms that MUST be translated even though they look like proper nouns. Without this the
+# model reasonably reads "Living Guideline" as a brand name and, obeying the
+# preserve-proper-nouns rule below, leaves it in English inside a French heading — producing
+# "Recommandations des Living Guidelines".
+GLOSSARY = [
+    ("Living Guidelines Recommendations", "Recommandations des lignes directrices évolutives"),
+    ("Living Guideline for Pediatric Concussion", "lignes directrices évolutives sur les commotions cérébrales pédiatriques"),
+    ("Living Guidelines", "lignes directrices évolutives"),
+    ("Living Guideline", "lignes directrices évolutives"),
+    ("Summary", "Résumé"),
+    ("Information From the Literature", "Informations tirées de la littérature"),
+]
+
+
+def _build_glossary_block() -> str:
+    pairs = "\n".join(f'  - "{en}" <-> "{fr}"' for en, fr in GLOSSARY)
+    en_headings = "\n".join(f"  {item}" for item in CANONICAL_HEADINGS["en"])
+    fr_headings = "\n".join(f"  {item}" for item in CANONICAL_HEADINGS["fr"])
+    return (
+        "GLOSSARY — these terms are ALWAYS translated. This rule OVERRIDES the "
+        "preserve-proper-nouns rule above; do not treat them as brand or product names:\n"
+        f"{pairs}\n"
+        "FIXED SECTION HEADINGS — when an item is one of these headings (or begins with one), "
+        "emit the exact counterpart below, character for character, including the space before "
+        "the colon in French. Do not re-word or re-punctuate them.\n"
+        "English:\n"
+        f"{en_headings}\n"
+        "French:\n"
+        f"{fr_headings}\n"
+        'NEVER produce "Recommandations des Living Guidelines" or '
+        '"lignes directrices vivantes" — the only correct French form is '
+        f'"{CANONICAL_HEADINGS["fr"][1]}".\n'
+        "EXCEPTION — when \"Living Guideline\" is part of the TITLE of a specific named tool, "
+        "protocol, or document (for example \"Living Guideline Return to Activity, Sports, and "
+        "School Protocol\"), keep the title in English: it names a real English-language "
+        "document that the reader will have to find under that name. The glossary applies to "
+        "the section headings and to generic references to the guideline itself, not to titles "
+        "of published tools."
+    )
 
 
 def _get_translate_model() -> str:
@@ -39,9 +80,10 @@ def _build_translation_messages(texts: List[str], target_lang: Optional[str]) ->
         "Rules:\n"
         "- Preserve Markdown structure exactly: headings, **bold**, lists, tables, blockquotes, and line breaks.\n"
         "- Keep links and URLs unchanged. Keep proper nouns, author names, in-text citation keys "
-        "(e.g. (Smith et al., 2020)), and tool names unchanged.\n"
+        "(e.g. (Smith et al., 2020)), and tool names unchanged — EXCEPT for the glossary terms below.\n"
         "- Translate the meaning faithfully and naturally. Do NOT add, remove, summarize, explain, or answer anything.\n"
         "- Translate each item independently and keep the same order and the same number of items.\n"
+        f"{_build_glossary_block()}\n"
         'Return ONLY strict JSON (no prose, no code fences) in exactly this shape: '
         '{"source_lang":"en|fr","target_lang":"en|fr","texts":["...","..."]}. '
         '"source_lang" is the detected language of the input items; "target_lang" is the language you translated into.'

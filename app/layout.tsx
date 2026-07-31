@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { DisclaimerModal } from "@/components/DisclaimerModal";
-import { Navbar } from "@/components/Navbar";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -24,16 +22,15 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // The app always boots English (the disclaimer opens in English every session), so
+  // rendering lang="en" here is correct by definition. LanguageProvider updates
+  // document.documentElement.lang on toggle.
   return (
     <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-white text-gray-800 flex flex-col h-screen`}
       >
-        <Navbar />
-        <main className="flex-1 overflow-hidden relative">
-          <DisclaimerModal />
-          {children}
-        </main>
+        {children}
       </body>
     </html>
   );

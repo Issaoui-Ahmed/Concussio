@@ -15,6 +15,8 @@ from api.followups import app as followups_app
 from api.scraping import app as scraping_app
 from api.fuelix import app as fuelix_app
 from api.translate import app as translate_app
+from api.cron import app as cron_app
+from api.resource_links import app as resource_links_app
 
 
 app = FastAPI(title="Concussio API")
@@ -52,7 +54,10 @@ def _copy_api_routes(source: FastAPI) -> None:
         )
 
 
-for sub_app in (chat_app, followups_app, scraping_app, fuelix_app, translate_app):
+for sub_app in (
+    chat_app, followups_app, scraping_app, fuelix_app, translate_app, cron_app,
+    resource_links_app,
+):
     _copy_api_routes(sub_app)
 
 

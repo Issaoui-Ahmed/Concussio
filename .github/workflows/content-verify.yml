@@ -1,0 +1,40 @@
+name: Content verify
+
+# Runs on every PR that touches content or the pipeline. This is the rot detector: it fails
+# loudly when a URL dies, without changing anything.
+on:
+  pull_request:
+    paths:
+      - "data/**"
+      - "lib/i18n/**"
+      - "scripts/content_pipeline/**"
+      - "all_rec_markdown.md"
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          npm ci
+
+      # Structural gates, generated-file freshness, and liveness. Writes nothing.
+      - name: Run gates
+        run: python -m scripts.content_pipeline.cli verify
+
+      - name: Type-check
+        run: npx tsc --noEmit

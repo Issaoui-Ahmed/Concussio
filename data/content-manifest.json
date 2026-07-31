@@ -1,0 +1,691 @@
+{
+  "generated_at": "2026-07-31T00:15:48+00:00",
+  "unit_count": 137,
+  "units": {
+    "en-resource:https://5pconcussion.com/en/scorecalculator": {
+      "kind": "en-resource",
+      "hash": "26d371cb0943156b",
+      "label": "Predicting Persistent Post-Concussive Problems in Pediatrics (5P): Score Calculator"
+    },
+    "en-resource:https://ama-assn.org/practice-management/digital/ama-telehealth-quick-guide": {
+      "kind": "en-resource",
+      "hash": "99e08f2b4463a736",
+      "label": "American Medical Association.TeleHealth Quick Guide. (2023)"
+    },
+    "en-resource:https://bjsm.bmj.com/content/57/11/695": {
+      "kind": "en-resource",
+      "hash": "4630a7777961d4b5",
+      "label": "2023 Amsterdam Consensus in Sport Group Statement (2023)"
+    },
+    "en-resource:https://casem-acmse.org/wp-content/uploads/2018/07/Booklet-RoadMap-2016-E-Final.pdf": {
+      "kind": "en-resource",
+      "hash": "0f496b2bc8d79dd1",
+      "label": "A Road Map for Implementing Concussion Management Policies and Protocols in Sport"
+    },
+    "en-resource:https://cattonline.com": {
+      "kind": "en-resource",
+      "hash": "83447e08f149d2c7",
+      "label": "CATT Online"
+    },
+    "en-resource:https://cbirt.org/sites/cbirt.org/files/resources/504_plan_ocamp.pdf": {
+      "kind": "en-resource",
+      "hash": "b9b12cc9e67d8fc0",
+      "label": "Post-Concussion Academic Accommodation Protocol"
+    },
+    "en-resource:https://cdc.gov/heads-up/guidelines/returning-to-school.html": {
+      "kind": "en-resource",
+      "hash": "35b425bf7e7c797c",
+      "label": "CDC: HEADS UP Resources for Returning to School"
+    },
+    "en-resource:https://cdc.gov/heads-up/hcp/providers": {
+      "kind": "en-resource",
+      "hash": "184fde62722b1a35",
+      "label": "CDC: HEADS UP to Health Care Professionals"
+    },
+    "en-resource:https://cdc.gov/heads-up/media/pdfs/providers/ace_v2-a.pdf": {
+      "kind": "en-resource",
+      "hash": "a3b047cac3a53568",
+      "label": "Acute Concussion Evaluation (ACE)"
+    },
+    "en-resource:https://cdc.gov/heads-up/media/pdfs/schools/TBI_Classroom_Tips_for_Teachers-a.pdf": {
+      "kind": "en-resource",
+      "hash": "7b44431cc75731c2",
+      "label": "CDC: HEADS UP Schools: Helping Students Recover from a Concussion: Classroom Tips for Teachers"
+    },
+    "en-resource:https://cdc.gov/headsup/resources/app.html": {
+      "kind": "en-resource",
+      "hash": "85c18da2ba336a33",
+      "label": "HEADS UP Concussion and Helmet Safety App"
+    },
+    "en-resource:https://cdc.gov/traumaticbraininjury/pdf/pediatricmtbiguidelineeducationaltools/mTBI-Diagnosis-Checklist-508.pdf": {
+      "kind": "en-resource",
+      "hash": "6c99078ec3f4b029",
+      "label": "CDC Pediatric mTBI Guideline Checklist"
+    },
+    "en-resource:https://cdc.gov/traumaticbraininjury/pdf/tbi_patient_instructions-a.pdf": {
+      "kind": "en-resource",
+      "hash": "bc821c063c1085c5",
+      "label": "CDC: HEADS UP Discharge Instructions"
+    },
+    "en-resource:https://cheo.on.ca/en/resources-and-support/resources/Concussion/Post-Concussion-Care_CHEO.pdf": {
+      "kind": "en-resource",
+      "hash": "fe4f6e7321164239",
+      "label": "CHEO Concussion Information Sheet (Children’s Hospital of Eastern Ontario)(2023)"
+    },
+    "en-resource:https://childrenshospital.org/sites/default/files/media_migration/5e066fcf-202f-45f0-b945-f392aa0a61d7.pdf": {
+      "kind": "en-resource",
+      "hash": "4f0e4b3f12c409c4",
+      "label": "Headache and Medication Diary"
+    },
+    "en-resource:https://childrensnational.org/-/media/cnhs-site/files/healthcare-providers/cnhn/fop-2016/june20/10gioiapeds-pcp-handout.pdf?la=en&hash=B696AEB4EBCF98C9524B606AD269F95BE615063E": {
+      "kind": "en-resource",
+      "hash": "5b1e8ad566f48d8a",
+      "label": "Post-Concussion Symptom Inventory (PCSI) Self Assessment"
+    },
+    "en-resource:https://cincinnatichildrens.org/service/h/headache-center/pedmidas#:~:text=PedMIDAS%20was%20developed%20to%20assess,the%20patient%20and%20their%20parent.": {
+      "kind": "en-resource",
+      "hash": "a6fa55b1b646931d",
+      "label": "pedMIDAS Headache Severity Tool for Children aged 4-18"
+    },
+    "en-resource:https://cma.ca/latest-stories/scaling-virtual-care-canada-cma-key-player-new-national-task-force": {
+      "kind": "en-resource",
+      "hash": "869ec8632d8bfe72",
+      "label": "Canadian Medical Association. Scaling up virtual care in Canada: CMA a key player in new national task force"
+    },
+    "en-resource:https://digitallibrary.cma.ca/viewer?file=%2Fmedia%2FDigital_Library_PDF%2F2020%2520Virtual%2520care%2520guide%2520EN.pdf#page=1": {
+      "kind": "en-resource",
+      "hash": "8d411ea7310278b8",
+      "label": "Canadian Medical Association. Virtual Care Guide for Patients"
+    },
+    "en-resource:https://edu.gov.on.ca/eng/healthyschools/concussion.html": {
+      "kind": "en-resource",
+      "hash": "066eb1e12711e9f5",
+      "label": "Ontario Ministry of Education School Board Policies for Concussion (Rowan’s Law)"
+    },
+    "en-resource:https://heads-ed.com/en/survey": {
+      "kind": "en-resource",
+      "hash": "32ffb22d527856e8",
+      "label": "HEADS-ED Tool"
+    },
+    "en-resource:https://healthmeasures.net/explore-measurement-systems/promis": {
+      "kind": "en-resource",
+      "hash": "9b4e573f514cc28d",
+      "label": "PROMIS Family Function"
+    },
+    "en-resource:https://healthmeasures.net/explore-measurement-systems/promis/obtain-administer-measures": {
+      "kind": "en-resource",
+      "hash": "e8ba8a3ce9f2ee62",
+      "label": "HealthMeasures.net"
+    },
+    "en-resource:https://healthmeasures.net/images/PROMIS/manuals/PROMIS_Anxiety_Scoring_Manual.pdf": {
+      "kind": "en-resource",
+      "hash": "1704af42f69ca5dd",
+      "label": "PROMIS Anxiety"
+    },
+    "en-resource:https://healthmeasures.net/images/PROMIS/manuals/PROMIS_Depression_Scoring_Manual.pdf": {
+      "kind": "en-resource",
+      "hash": "814c4c342f8b1ce4",
+      "label": "PROMIS Depression"
+    },
+    "en-resource:https://healthmeasures.net/images/PROMIS/manuals/PROMIS_Pediatric_and_Proxy_Profile_Scoring_Manual.pdf": {
+      "kind": "en-resource",
+      "hash": "3c0e94166676cd2b",
+      "label": "PROMIS Profile"
+    },
+    "en-resource:https://hollandbloorview.ca/concussionhandbook": {
+      "kind": "en-resource",
+      "hash": "f8ad8afe052655d5",
+      "label": "Concussion & You Handbook"
+    },
+    "en-resource:https://hollandbloorview.ca/services/programs-services/concussion-centre/concussion-education/schoolfirst": {
+      "kind": "en-resource",
+      "hash": "80d3164baf40c55d",
+      "label": "SCHOOLFirst Handbook: Enabling successful return to school for Canadian youth following a concussion"
+    },
+    "en-resource:https://ichd-3.org": {
+      "kind": "en-resource",
+      "hash": "bae86f46502f63ce",
+      "label": "International Classification of Headache Disorders (ICHD-III) (2021)"
+    },
+    "en-resource:https://inesss.qc.ca/fileadmin/doc/INESSS/Rapports/Traumatologie/INESSS_Depliant_TCCL_INESSS.pdf": {
+      "kind": "en-resource",
+      "hash": "ef9bb285177548ff",
+      "label": "French"
+    },
+    "en-resource:https://montrealchildrenshospital.ca/wp-content/uploads/2024/04/2023-09_pads-dischargeforms_web_en.pdf": {
+      "kind": "en-resource",
+      "hash": "9773ea1615454352",
+      "label": "Montreal Children’s Hospital Discharge Instructions (2023)"
+    },
+    "en-resource:https://montrealchildrenshospital.ca/wp-content/uploads/2024/04/2023-10-ConcussionKit-Brochure_EN_WEB.pdf": {
+      "kind": "en-resource",
+      "hash": "ee6af263858422ab",
+      "label": "Understanding and Managing Concussion in Youth: 3rd Edition Concussion Kit. (Montreal Children’s Hospital) (2023)"
+    },
+    "en-resource:https://nationwidechildrens.org/specialties/concussion-clinic/concussion-toolkit/an-educators-guide-to-concussions-in-the-classroom": {
+      "kind": "en-resource",
+      "hash": "b570c6698b1e462e",
+      "label": "An Educator’s Guide to Concussions in the Classroom, 2nd Edition"
+    },
+    "en-resource:https://parachute.ca/en/professional-resources/statement-on-concussion-baseline-testing-in-canada": {
+      "kind": "en-resource",
+      "hash": "a933d5834de2f7b1",
+      "label": "Parachute – Statement on Baseline Testing"
+    },
+    "en-resource:https://parachute.ca/wp-content/uploads/2019/06/Concussion-Guide-for-Parents-and-Caregivers.pdf": {
+      "kind": "en-resource",
+      "hash": "7ecc1b130ae27ebb",
+      "label": "Parachute – Pan-Canadian School Concussion Protocol Template"
+    },
+    "en-resource:https://parachutecanada.org/injury-topics/item/2587": {
+      "kind": "en-resource",
+      "hash": "0beb724170d003d8",
+      "label": "Concussion Ed – Parachute Concussion Education"
+    },
+    "en-resource:https://pedsconcussion.com/bess": {
+      "kind": "en-resource",
+      "hash": "346236d7b2defffd",
+      "label": "Balance Error Scoring System"
+    },
+    "en-resource:https://pedsconcussion.com/cheo-sleep-for-youth-handout": {
+      "kind": "en-resource",
+      "hash": "69c4b71d08d5e13b",
+      "label": "CHEO Sleep for Youth Handout"
+    },
+    "en-resource:https://pedsconcussion.com/concussion-recognition-tool-5-to-help-identify-concussion-in-children-adolescents-and-adults": {
+      "kind": "en-resource",
+      "hash": "215f86aa39e34603",
+      "label": "Physical Examination"
+    },
+    "en-resource:https://pedsconcussion.com/diagnostic_criteria/%20": {
+      "kind": "en-resource",
+      "hash": "14ca3e64cc1bd91c",
+      "label": "2023 ACRM Diagnostic Criteria"
+    },
+    "en-resource:https://pedsconcussion.com/dixhallpike": {
+      "kind": "en-resource",
+      "hash": "3dd67a6313fdd86a",
+      "label": "Dix-Hallpike Test"
+    },
+    "en-resource:https://pedsconcussion.com/dsm5_severity-measure-for-depression-child-age-11-to-17": {
+      "kind": "en-resource",
+      "hash": "559c8c8072aaaa5d",
+      "label": "Severity Measure for Depression- Child Age 11–17 (adapted from PHQ-9 modified for Adolescents [PHQ-A])"
+    },
+    "en-resource:https://pedsconcussion.com/dsm5_severity-measure-for-generalized-anxiety-disorder-child-age-11-to-17": {
+      "kind": "en-resource",
+      "hash": "d55582f849b46cd7",
+      "label": "Severity Measure for Generalized Anxiety Disorder-Child Age 11–17 (adapted from GAD-7)"
+    },
+    "en-resource:https://pedsconcussion.com/dva": {
+      "kind": "en-resource",
+      "hash": "5619b3591724a90c",
+      "label": "Dynamic Visual Acuity Test"
+    },
+    "en-resource:https://pedsconcussion.com/epley": {
+      "kind": "en-resource",
+      "hash": "2d69ab502d7bf959",
+      "label": "Epley Manoeuvre"
+    },
+    "en-resource:https://pedsconcussion.com/gad-7_english": {
+      "kind": "en-resource",
+      "hash": "ed887d828bd7eb4e",
+      "label": "Generalized Anxiety Disorder scale (GAD-7)"
+    },
+    "en-resource:https://pedsconcussion.com/gait": {
+      "kind": "en-resource",
+      "hash": "d8e2b23bbe5710b8",
+      "label": "Functional Gait Assessment"
+    },
+    "en-resource:https://pedsconcussion.com/head-tt": {
+      "kind": "en-resource",
+      "hash": "d071e99a9b257737",
+      "label": "Head Thrust Test and Dynamic Visual Acuity"
+    },
+    "en-resource:https://pedsconcussion.com/manage-acute-and-prolonged-concussion-symptoms-algorithm": {
+      "kind": "en-resource",
+      "hash": "c7f05d9126b69f98",
+      "label": "Manage Acute and Prolonged Symptoms Algorithm"
+    },
+    "en-resource:https://pedsconcussion.com/pecarn-head": {
+      "kind": "en-resource",
+      "hash": "99f695c05b636483",
+      "label": "PECARN Management Algorithm for Children after Head Trauma"
+    },
+    "en-resource:https://pedsconcussion.com/phq-9_english": {
+      "kind": "en-resource",
+      "hash": "8744b78e6bed30cd",
+      "label": "Patient Health Questionnaire (PHQ-9)"
+    },
+    "en-resource:https://pedsconcussion.com/phq-sds": {
+      "kind": "en-resource",
+      "hash": "d6096c17a7099ed5",
+      "label": "PHQ-SADS (somatic)"
+    },
+    "en-resource:https://pedsconcussion.com/recognition": {
+      "kind": "en-resource",
+      "hash": "a9ab7b219bf142b3",
+      "label": "Concussion Recognition Tool 6. To help identify concussion in children, adolescents, and adults (2023)"
+    },
+    "en-resource:https://pedsconcussion.com/return-to-activity-sport-school": {
+      "kind": "en-resource",
+      "hash": "3a623ec494b84f76",
+      "label": "Living Guideline Return to Activity Sports and School Protocol"
+    },
+    "en-resource:https://pedsconcussion.com/scat": {
+      "kind": "en-resource",
+      "hash": "cf4f5ac744f4420d",
+      "label": "Sport Concussion Assessment Tool 6 (SCAT6 13+yrs) (2023)"
+    },
+    "en-resource:https://pedsconcussion.com/scat-child": {
+      "kind": "en-resource",
+      "hash": "2e6c0f27e3e58054",
+      "label": "Sport Concussion Assessment Tool 6 (Child SCAT6 8-12yrs)"
+    },
+    "en-resource:https://pedsconcussion.com/scoat": {
+      "kind": "en-resource",
+      "hash": "cebb833947e7d63d",
+      "label": "Sport Concussion Office Assessment Tool (SCOAT6 13+ yrs)"
+    },
+    "en-resource:https://pedsconcussion.com/scoat-child": {
+      "kind": "en-resource",
+      "hash": "db2d17a1db5a9eca",
+      "label": "Sport Concussion Office Assessment Tool (Child SCOAT6 8-12 yrs)"
+    },
+    "en-resource:https://pedsconcussion.com/standards-for-post-concussion-care-2017-en": {
+      "kind": "en-resource",
+      "hash": "315536f40e11511d",
+      "label": "Standards for post-concussion care: from diagnosis to the interdisciplinary concussion clinic"
+    },
+    "en-resource:https://pedsconcussion.com/template-for-concussion-teams-letter-to-the-child-adolescents-school": {
+      "kind": "en-resource",
+      "hash": "4421cbc32a483251",
+      "label": "Template: Letter of Accommodation from the Concussion Care Team to the School"
+    },
+    "en-resource:https://pedsconcussion.com/the-role-of-school-boards-community-sports-organizations-and-centres": {
+      "kind": "en-resource",
+      "hash": "9c21ed149a522134",
+      "label": "Pediatric Concussion: The Role of School Boards, Community Sports Organizations, and Centres"
+    },
+    "en-resource:https://pedsconcussion.com/tool-10-1post-concussion-vision-vestibular-and-oculomotor-disturbances-algorithm": {
+      "kind": "en-resource",
+      "hash": "75b6e6f7923e1c35",
+      "label": "Post-Concussion Vestibular (balance/dizziness) and Vision Disturbances Algorithm"
+    },
+    "en-resource:https://pedsconcussion.com/tool-12-1-concussion-implications-and-interventions-for-the-classroom": {
+      "kind": "en-resource",
+      "hash": "41685f7a159d6ef7",
+      "label": "Concussion Implications and Interventions for the Classroom"
+    },
+    "en-resource:https://pedsconcussion.com/tool-15-1-considerations-for-telemedicine-and-virtual-care-algorithm": {
+      "kind": "en-resource",
+      "hash": "b715f95e358e7d2f",
+      "label": "Considerations for Telemedicine and Virtual Care Algorithm"
+    },
+    "en-resource:https://pedsconcussion.com/tool-15-2-considerations-for-a-virtual-physical-examination-for-medical-assessment-and-follow-up-of-concussion-patients": {
+      "kind": "en-resource",
+      "hash": "83665b4f3f122f8f",
+      "label": "Considerations for a virtual physical examination for medical assessment and follow-up of concussion patients"
+    },
+    "en-resource:https://pedsconcussion.com/tool-2-3-the-canadian-assessment-of-tomography-for-childhood-head-injury-2-catch2-rule": {
+      "kind": "en-resource",
+      "hash": "3c1c3b355dc27512",
+      "label": "CATCH2 Rule"
+    },
+    "en-resource:https://pedsconcussion.com/tool-2-4-algorithym-for-the-management-of-the-pediatric-patient-2-years-with-minor-head-trauma": {
+      "kind": "en-resource",
+      "hash": "accd57f51e46c677",
+      "label": "Algorithm for the Management of the Pediatric Patient ≥ 2 years with Minor Head Trauma"
+    },
+    "en-resource:https://pedsconcussion.com/tool-2-5-four-ps-prioritize-plan-pace-and-position": {
+      "kind": "en-resource",
+      "hash": "4936319b4587655b",
+      "label": "Tool 2.5: “Four P’s” – Prioritize, Plan, Pace, and Position"
+    },
+    "en-resource:https://pedsconcussion.com/tool-2-6-post-concussion-information-sheet-2": {
+      "kind": "en-resource",
+      "hash": "493867d98a44de46",
+      "label": "Post-Concussion Information Sheet"
+    },
+    "en-resource:https://pedsconcussion.com/tool-2-7-strategies-to-promote-good-sleep-and-alertness-2": {
+      "kind": "en-resource",
+      "hash": "a64e0baea528c073",
+      "label": "Strategies to Promote Good Sleep and Alertness"
+    },
+    "en-resource:https://pedsconcussion.com/tool-6-1-post-concussion-headache-algorithm-3": {
+      "kind": "en-resource",
+      "hash": "6c12e8d635c1b448",
+      "label": "Post-Concussion headache algorithm"
+    },
+    "en-resource:https://pedsconcussion.com/tool-6-2-general-considerations-regarding-pharmacotherapy-2": {
+      "kind": "en-resource",
+      "hash": "df1be4a24348a16a",
+      "label": "General Considerations Regarding Pharmacotherapy"
+    },
+    "en-resource:https://pedsconcussion.com/tool-6-3-approved-medications-for-pediatric-indications": {
+      "kind": "en-resource",
+      "hash": "dc5d3848f636f0e4",
+      "label": "Approved Medications for Pediatric Indications"
+    },
+    "en-resource:https://pedsconcussion.com/tool-7-1-prolonged-post-concussion-sleep-disturbances-algorithm": {
+      "kind": "en-resource",
+      "hash": "dc17197e84178989",
+      "label": "Managing Post-Concussion Sleep Disturbances Algorithm"
+    },
+    "en-resource:https://pedsconcussion.com/tool-7-2-factors-that-may-influence-the-child-adolescents-sleep-wake-cycle": {
+      "kind": "en-resource",
+      "hash": "9bc0ad289aa6be51",
+      "label": "Factors That May Influence the Child/Adolescent’s Sleep/Wake Cycle"
+    },
+    "en-resource:https://pedsconcussion.com/tool-8-1-post-concussion-mental-health-considerations-algorithm-3": {
+      "kind": "en-resource",
+      "hash": "b9e8e46142be8297",
+      "label": "Post-Concussion Mental Health Considerations Algorithm"
+    },
+    "en-resource:https://pedsconcussion.com/tool-8-2-2": {
+      "kind": "en-resource",
+      "hash": "d5c27bdbc6830f9f",
+      "label": "Management of Prolonged Mental Health Disorders Algorithm"
+    },
+    "en-resource:https://pedsconcussion.com/tools-resources/community-resources": {
+      "kind": "en-resource",
+      "hash": "fe52c9f9a396c374",
+      "label": "Updated Handouts (parents, teachers, coaches, patients)"
+    },
+    "en-resource:https://pedsconcussion.com/vce-manual": {
+      "kind": "en-resource",
+      "hash": "4719e383fa89acbf",
+      "label": "Virtual Care Exam Training Resource"
+    },
+    "en-resource:https://pedsconcussion.com/vve": {
+      "kind": "en-resource",
+      "hash": "a88bcfeedd80cc09",
+      "label": "Visio-Vestibular Examination"
+    },
+    "en-resource:https://pedsconcussion.com/wp-content/uploads/2020/12/Concussion-First-Nations-Youth.pdf": {
+      "kind": "en-resource",
+      "hash": "c7ebef32bbe5c366",
+      "label": "Post Concussion Information Sheet for First Nations Youth"
+    },
+    "en-resource:https://pedsconcussion.com/wp-content/uploads/2020/12/Concussion-Inuit-Youth-FR.pdf": {
+      "kind": "en-resource",
+      "hash": "5e0e41daa5ebefb0",
+      "label": "Post Concussion Information Sheet for Nunavut Youth – French"
+    },
+    "en-resource:https://pedsconcussion.com/wp-content/uploads/2020/12/Concussion-Inuit-Youth-IQ.pdf": {
+      "kind": "en-resource",
+      "hash": "8aa130e333500f7e",
+      "label": "Post Concussion Information Sheet for Nunavut Youth – Inuinnaqtun"
+    },
+    "en-resource:https://pedsconcussion.com/wp-content/uploads/2020/12/Concussion-Inuit-Youth-IU.pdf": {
+      "kind": "en-resource",
+      "hash": "02a22982ec434e53",
+      "label": "Post Concussion Information Sheet for Nunavut Youth – Inuktitut"
+    },
+    "en-resource:https://pedsconcussion.com/wp-content/uploads/2024/03/Canadian-Guideline-on-Concussion-in-Sport-2nd-edition-2024.pdf": {
+      "kind": "en-resource",
+      "hash": "cfd079402f9eb835",
+      "label": "Canadian Guideline on Concussion in Sport (2024)"
+    },
+    "en-resource:https://pedsconcussion.com/wp-content/uploads/2024/03/EN-Assessment-Letter-Parachute.pdf": {
+      "kind": "en-resource",
+      "hash": "97e606d79b4700a2",
+      "label": "Canadian Guideline on Concussion in Sport -2nd edition – Medical Assessment Letter"
+    },
+    "en-resource:https://pedsconcussion.com/wp-content/uploads/2024/03/EN-PreSeason-Education-Sheet-Parachute-.pdf": {
+      "kind": "en-resource",
+      "hash": "dbedc917acb06dd1",
+      "label": "Canadian Guideline on Concussion in Sport – 2nd Edition- Pre-Season Education Sheet"
+    },
+    "en-resource:https://pedsconcussion.com/wp-content/uploads/2024/03/Parachute-Return-to-Sport-and-School-Protocols-2024.pdf": {
+      "kind": "en-resource",
+      "hash": "46fd3952252c388b",
+      "label": "Parachute – Return to School and Return to Sport Strategies"
+    },
+    "en-resource:https://pedsconcussion.com/wp-content/uploads/Tool-12.3-Template-for-Physician_Letter-to-the-Child_-Adolescent_School.pdf": {
+      "kind": "en-resource",
+      "hash": "0383aa16a17d41a5",
+      "label": "Template Letter of Accommodation from Physician to School"
+    },
+    "en-resource:https://pedsconcussion.com/wp-content/uploads/Tool-12.4-Sample-Letter_Email-from-School-to-Parents.pdf": {
+      "kind": "en-resource",
+      "hash": "f4020d647072466f",
+      "label": "Sample Letter/Email from School to Parents"
+    },
+    "en-resource:https://pedsconcussion.com/wp-content/uploads/cheo-sleep-for-youth-handout.pdf": {
+      "kind": "en-resource",
+      "hash": "0ca38550c15fcfd8",
+      "label": "Sleep for Youth – CHEO Sleep Hygiene handout"
+    },
+    "en-resource:https://resources.cattonline.com/files/concussion-information-package-for-coaches": {
+      "kind": "en-resource",
+      "hash": "ed9f1918e691696c",
+      "label": "CATT Concussion Resources for Coaches"
+    },
+    "en-resource:https://resources.cattonline.com/files/concussion-information-package-for-school-professionals": {
+      "kind": "en-resource",
+      "hash": "6f896c5962665693",
+      "label": "CATT: Concussion Resources for School Professionals"
+    },
+    "en-resource:https://resources.cattonline.com/files/return-to-school-strategy": {
+      "kind": "en-resource",
+      "hash": "0bc7685aa0ff4404",
+      "label": "CATT: Return-to-School Strategy"
+    },
+    "en-resource:https://resources.cattonline.com/files/return-to-sport-strategy": {
+      "kind": "en-resource",
+      "hash": "cac8853a526e82b3",
+      "label": "CATT: Return to Sport Strategy (2024)"
+    },
+    "en-resource:https://resources.cattonline.com/files/student-return-to-learn-plan": {
+      "kind": "en-resource",
+      "hash": "8c2e93b6a273b59b",
+      "label": "CATT: Student Return to Learn Plan"
+    },
+    "fr-resource:https://bjsm.bmj.com/content/57/11/692": {
+      "kind": "fr-resource",
+      "hash": "b1c6886d374ee868",
+      "label": "référence"
+    },
+    "fr-resource:https://cdc.gov/traumatic-brain-injury/media/pdfs/2018-cdc_mtbi_discharge-instructions-508.pdf?CDC_AAref_Val=https://www.cdc.gov/traumaticbraininjury/pdf/pediatricmtbiguidelineeducationaltools/2018-CDC_mTBI_Discharge-Instructions-508.pdf": {
+      "kind": "fr-resource",
+      "hash": "5149d577b12a4b6e",
+      "label": "(Anglais) Heads UP Discharge Instructions"
+    },
+    "fr-resource:https://cheo.on.ca/en/resources-and-support/resources/P5643F.pdf": {
+      "kind": "fr-resource",
+      "hash": "e5c8808c732a544d",
+      "label": "Le sommeil chez les enfants et les jeunes"
+    },
+    "fr-resource:https://childrenshospital.org/sites/default/files/media_migration/5e066fcf-202f-45f0-b945-f392aa0a61d7.pdf": {
+      "kind": "fr-resource",
+      "hash": "4f0e4b3f12c409c4",
+      "label": "Headache and Medication Diary"
+    },
+    "fr-resource:https://childrenshospital.org/~/media/centers-and-services/programs/f_n/headache-program/chb_my_headache_diary(1).ashx?la=en": {
+      "kind": "fr-resource",
+      "hash": "36296c7fda917909",
+      "label": "( Anglais )"
+    },
+    "fr-resource:https://concussionsontario.org": {
+      "kind": "fr-resource",
+      "hash": "1ce6b7b6c030ba46",
+      "label": "ConcussionsOntario.org"
+    },
+    "fr-resource:https://hollandbloorview.ca/sites/default/files/2019-06/Concussion%20handbook%20French%20Jan%202016.pdf": {
+      "kind": "fr-resource",
+      "hash": "321e08d44aecb06c",
+      "label": "La commotion cérébrale et vous : Guide pour les parents et les enfants"
+    },
+    "fr-resource:https://hopitaldemontrealpourenfants.ca/wp-content/uploads/2024/04/2023-09_pads-dischargeforms_web_fr.pdf": {
+      "kind": "fr-resource",
+      "hash": "5020e158b992a128",
+      "label": "Instructions après une commotion cérébrale (Hôpital de Montréal pour Enfants) (2023)"
+    },
+    "fr-resource:https://inesss.qc.ca/fileadmin/doc/INESSS/Rapports/Traumatologie/INESSS_Depliant_TCCL_INESSS.pdf": {
+      "kind": "fr-resource",
+      "hash": "6c55df367256a543",
+      "label": "Conseils pour la reprise graduelle des activités intellectuelles, physiques et sportives"
+    },
+    "fr-resource:https://montrealchildrenshospital.ca/wp-content/uploads/2024/04/2023-10-ConcussionKit-Brochure_EN_WEB.pdf?_gl=1*b3a059*_up*MQ..*_ga*NDAwODA4MjkzLjE3MzQwMTMwNDU.*_ga_L7P8T0X3YQ*MTczNDAxMzA0NS4xLjAuMTczNDAxMzA0NS4wLjAuMA..": {
+      "kind": "fr-resource",
+      "hash": "3f18bbcd76424486",
+      "label": "( Anglais ) KiT pour les commotions cérébrales – Comprendre et prendre en charge les commotions cérébrales chez les jeunes (Hôpital de Montréal pour Enfants) (2023)"
+    },
+    "fr-resource:https://parachute.ca/en/injury-topic/concussion": {
+      "kind": "fr-resource",
+      "hash": "4ae87f8d97262f77",
+      "label": "Parachute.ca"
+    },
+    "fr-resource:https://parachute.ca/en/injury-topics/concussion-ed-app": {
+      "kind": "fr-resource",
+      "hash": "3c31b9d31d303b4b",
+      "label": "Concussion Ed, l’App mobile (Parachute)"
+    },
+    "fr-resource:https://parachute.ca/wp-content/uploads/2019/06/TestsPr%C3%A9Saison-FicheInformative-Parachute-UA.pdf": {
+      "kind": "fr-resource",
+      "hash": "af4317fb8220911d",
+      "label": "Commotion cérébrale: Tests pré-saison (baseline)"
+    },
+    "fr-resource:https://parachute.ca/wp-content/uploads/2021/03/Fiche-dinformation-post-commotion-pour-les-enfants-de-Nunavut-Commotion-cerebrale-UA.pdf": {
+      "kind": "fr-resource",
+      "hash": "14fc77ae535c7964",
+      "label": "Fiche d’information post-commotion pour les enfants du Nunavut (Parachute) (2019)"
+    },
+    "fr-resource:https://pedsconcussion.com/examen-virtuel-des-commotions-cerebrales-manuel-de-formation-telecharger": {
+      "kind": "fr-resource",
+      "hash": "2ee1f7b4bc42e4e8",
+      "label": "Examen virtuel des commotions cérébrales: Manuel de Formation"
+    },
+    "fr-resource:https://pedsconcussion.com/fiche-dinformation-post-commotion": {
+      "kind": "fr-resource",
+      "hash": "0cbe087fb1485895",
+      "label": "Fiche D’Information Post-Commotion Cérébrale"
+    },
+    "fr-resource:https://pedsconcussion.com/fr/enseignants": {
+      "kind": "fr-resource",
+      "hash": "128754041166d6c9",
+      "label": "Enseignant"
+    },
+    "fr-resource:https://pedsconcussion.com/fr/entraineur": {
+      "kind": "fr-resource",
+      "hash": "b476f70ddf5225e9",
+      "label": "Entraîneur"
+    },
+    "fr-resource:https://pedsconcussion.com/fr/parents": {
+      "kind": "fr-resource",
+      "hash": "29ddae427a423fc6",
+      "label": "Parent"
+    },
+    "fr-resource:https://pedsconcussion.com/outil-10-1-algorithme-de-gestion-des-troubles-de-la-vision-des-troubles-vestibulaires-et-des-troubles-oculomoteurs": {
+      "kind": "fr-resource",
+      "hash": "e14328eace74fac6",
+      "label": "Algorithme de gestion des troubles de la vision, des troubles vestibulaires et des troubles oculomoteurs après une commotion cérébrale"
+    },
+    "fr-resource:https://pedsconcussion.com/outil-12-1-repercussions-des-commotions-cerebrales-et-interventions-pour-la-salle-de-classe": {
+      "kind": "fr-resource",
+      "hash": "68313e91a9af8a51",
+      "label": "Répercussions des commotions cérébrales et interventions pour la salle de classe"
+    },
+    "fr-resource:https://pedsconcussion.com/outil-6-1-algorithme-de-gestion-des-maux-de-tete-post-commotions-cerebrales": {
+      "kind": "fr-resource",
+      "hash": "f8c8384f651d90b2",
+      "label": "Algorithme de gestion des maux de tête post-commotions cérébrales"
+    },
+    "fr-resource:https://pedsconcussion.com/outil-7-1-algorithme-de-gestion-pour-les-troubles-du-sommeil-postcommotion-prolonges": {
+      "kind": "fr-resource",
+      "hash": "211532d32c071672",
+      "label": "Algorithme de gestion pour les troubles du sommeil post-commotion prolongés"
+    },
+    "fr-resource:https://pedsconcussion.com/outil-8-1-algorithme-des-considerations-sur-lasante-mentale-apres-une-commotion-cerebrale": {
+      "kind": "fr-resource",
+      "hash": "58174ca36461664e",
+      "label": "Algorithme des considérations sur la santé mentale après une commotion cérébrale"
+    },
+    "fr-resource:https://pedsconcussion.com/outil-8-2-algorithme-de-gestion-des-troubles-de-sante-mentale-prolonges": {
+      "kind": "fr-resource",
+      "hash": "85e25e723b9747e6",
+      "label": "Algorithme de gestion des troubles de santé mentale prolongés"
+    },
+    "fr-resource:https://pedsconcussion.com/reconnaissance": {
+      "kind": "fr-resource",
+      "hash": "1dd8a395d7205871",
+      "label": "Outil de reconnaissance des commotions cérébrales"
+    },
+    "fr-resource:https://pedsconcussion.com/retour-aux-activites-sport-lecole": {
+      "kind": "fr-resource",
+      "hash": "48873e6ab8be1165",
+      "label": "Étapes de retour aux activités/au sport et à l’école"
+    },
+    "fr-resource:https://pedsconcussion.com/scat-enfant-fr": {
+      "kind": "fr-resource",
+      "hash": "49726f4ab8f7e45b",
+      "label": "SCAT6 Enfant; Outil d’évaluation des commotions cérébrales dans le sport, pour les enfants âgés de 8 à 12 ans (2023)"
+    },
+    "fr-resource:https://pedsconcussion.com/scat-fr": {
+      "kind": "fr-resource",
+      "hash": "c7ae96137fc0d2a2",
+      "label": "SCAT6; Outil d’évaluation des commotions cérébrales dans le sport, pour Adolescents (13 ans et +) et Adultes (2023)"
+    },
+    "fr-resource:https://pedsconcussion.com/scoat-fr": {
+      "kind": "fr-resource",
+      "hash": "768567ee8bb07716",
+      "label": "SCOAT6; Outil d’évaluation des commotions cérébrales en cabinet – 6e édition. pour Adultes & Adolescents (13 ans et +) (2023)"
+    },
+    "fr-resource:https://pedsconcussion.com/telemedecine-et-soins-virtuel": {
+      "kind": "fr-resource",
+      "hash": "5b505e8c998236bf",
+      "label": "Considérations pour la télémédecine et l’algorithme de soins virtuel"
+    },
+    "fr-resource:https://pedsconcussion.com/wp-content/uploads/Outil-1.3-Algorithme-de-gestion-des-symptomes-de-commotion-cerebrale-aigue-et-prolongee-1.pdf": {
+      "kind": "fr-resource",
+      "hash": "3e0c263ef8fa0018",
+      "label": "Algorithme de gestion des symptômes de commotion cérébrale aiguë et prolongée"
+    },
+    "fr-resource:https://resources.cattonline.com/files/retour-a-lactivite-french-return-to-activity": {
+      "kind": "fr-resource",
+      "hash": "a1d84e7b0c06d888",
+      "label": "Retour au sport (CATT) (2023)"
+    },
+    "fr-resource:https://resources.cattonline.com/files/retour-a-lecole-return-to-school-french-ver": {
+      "kind": "fr-resource",
+      "hash": "e7a164780bd924cc",
+      "label": "Retour à l’école (CATT) (2023)"
+    },
+    "fr-resource:https://resources.cattonline.com/files/retour-au-travail-french-return-to-work": {
+      "kind": "fr-resource",
+      "hash": "aa22c5b973d590a8",
+      "label": "Reprise des activités travail (La Fondation ontarienne de neurotraumatologie) (2024)"
+    },
+    "pair:https://pedsconcussion.com/tool-10-1post-concussion-vision-vestibular-and-oculomotor-disturbances-algorithm": {
+      "kind": "pair",
+      "hash": "f23a58e1911c8952",
+      "label": "Algorithme de gestion des troubles de la vision, des troubles vestibulaires et des troubles oculomoteurs après une commotion cérébrale"
+    },
+    "pair:https://pedsconcussion.com/tool-12-1-concussion-implications-and-interventions-for-the-classroom": {
+      "kind": "pair",
+      "hash": "163cef17bb10fdae",
+      "label": "Répercussions des commotions cérébrales et interventions pour la salle de classe"
+    },
+    "pair:https://pedsconcussion.com/tool-6-1-post-concussion-headache-algorithm-3": {
+      "kind": "pair",
+      "hash": "24527a3cc8dce68d",
+      "label": "Algorithme de gestion des maux de tête post-commotions cérébrales"
+    },
+    "pair:https://pedsconcussion.com/tool-7-1-prolonged-post-concussion-sleep-disturbances-algorithm": {
+      "kind": "pair",
+      "hash": "1e4f665361e6c5aa",
+      "label": "Algorithme de gestion pour les troubles du sommeil post-commotion prolongés"
+    },
+    "pair:https://pedsconcussion.com/tool-8-1-post-concussion-mental-health-considerations-algorithm-3": {
+      "kind": "pair",
+      "hash": "c5d2304a8919312c",
+      "label": "Algorithme des considérations sur la santé mentale après une commotion cérébrale"
+    },
+    "pair:https://pedsconcussion.com/tool-8-2-2": {
+      "kind": "pair",
+      "hash": "608385f78c37e9cf",
+      "label": "Algorithme de gestion des troubles de santé mentale prolongés"
+    }
+  }
+}

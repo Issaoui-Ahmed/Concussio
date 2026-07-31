@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Retired code kept for reference only — never built. See archive/README.md.
+    "archive/**",
   ]),
 ]);
 

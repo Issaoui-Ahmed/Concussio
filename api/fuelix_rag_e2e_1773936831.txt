@@ -1,3 +1,0 @@
-Concussio RAG Smoke Doc
-Unique marker: RAG_ROOT_CAUSE_7391.
-If asked for the marker, answer exactly: RAG_ROOT_CAUSE_7391.
