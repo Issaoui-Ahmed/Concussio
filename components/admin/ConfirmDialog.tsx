@@ -8,8 +8,8 @@ import { Loader2 } from "lucide-react";
  * reason field start empty every time without an effect resetting it — the component simply has
  * not existed since the last dialog closed.
  *
- * Shared by the pairing workbench and the pipeline runner, which both need the same two things:
- * a last look before something irreversible, and somewhere to type the admin secret.
+ * Shared by the pairing workbench and the pipeline runner, which both need the same thing: a
+ * last look before something irreversible.
  */
 export function ConfirmDialog({
     title,

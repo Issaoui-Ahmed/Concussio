@@ -8,7 +8,6 @@ import {
     ChevronRight,
     Link2,
     Loader2,
-    Lock,
     RefreshCw,
     Search,
     Trash2,
@@ -18,7 +17,6 @@ import {
 } from "lucide-react";
 import { normalizeUrl } from "@/lib/i18n/resourceLinks";
 import { ConfirmDialog } from "@/components/admin/ConfirmDialog";
-import { SECRET_KEY } from "@/components/admin/adminSecret";
 
 /**
  * The single place EN->FR resource pairing is curated.
@@ -69,7 +67,6 @@ interface Report {
     links: LinkEntry[];
     summary: Record<string, number>;
     store: { configured: boolean; available: boolean; error: string | null; overrides: number };
-    authRequired: boolean;
     errors: string[];
     /**
      * Whether the "Living Guideline Tools" heading could be read on the source page. Separate
@@ -314,8 +311,7 @@ function ResourceCard({
 
 type Pending =
     | { kind: "unpair"; link: LinkEntry }
-    | { kind: "clear-all"; count: number }
-    | { kind: "secret" };
+    | { kind: "clear-all"; count: number };
 
 export function ResourceWorkbench() {
     const [report, setReport] = useState<Report | null>(null);
@@ -330,12 +326,7 @@ export function ResourceWorkbench() {
     const [pending, setPending] = useState<Pending | null>(null);
     const [page, setPage] = useState({ paired: 0, en: 0, fr: 0 });
     const [busy, setBusy] = useState(false);
-    const [secret, setSecret] = useState<string>("");
     const inFlight = useRef(false);
-
-    useEffect(() => {
-        setSecret(window.sessionStorage.getItem(SECRET_KEY) ?? "");
-    }, []);
 
     const load = useCallback(async (manual: boolean) => {
         if (inFlight.current) return;
@@ -387,14 +378,9 @@ export function ResourceWorkbench() {
                     ...init,
                     headers: {
                         ...(init.body ? { "Content-Type": "application/json" } : {}),
-                        ...(secret ? { "x-admin-secret": secret } : {}),
                         ...(init.headers ?? {}),
                     },
                 });
-                if (response.status === 401) {
-                    setPending({ kind: "secret" });
-                    throw new Error("Editing is locked. Enter the admin secret to continue.");
-                }
                 if (!response.ok) {
                     const detail = await response.json().catch(() => null);
                     throw new Error(detail?.detail ?? `Request failed (${response.status}).`);
@@ -415,7 +401,7 @@ export function ResourceWorkbench() {
                 setBusy(false);
             }
         },
-        [load, secret],
+        [load],
     );
 
     useEffect(() => {
@@ -527,7 +513,7 @@ export function ResourceWorkbench() {
     );
 
     const confirmPending = useCallback(
-        async (reason: string) => {
+        async () => {
             if (!pending) return;
             switch (pending.kind) {
                 case "unpair":
@@ -543,13 +529,6 @@ export function ResourceWorkbench() {
                 case "clear-all":
                     await mutate("/overrides", { method: "DELETE" }, "All manual pairings cleared.");
                     return;
-                case "secret": {
-                    window.sessionStorage.setItem(SECRET_KEY, reason.trim());
-                    setSecret(reason.trim());
-                    setPending(null);
-                    setNotice("Secret saved for this tab. Try the change again.");
-                    return;
-                }
             }
         },
         [pending, mutate],
@@ -644,15 +623,6 @@ export function ResourceWorkbench() {
                     </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
-                    {report?.authRequired && !secret && (
-                        <button
-                            onClick={() => setPending({ kind: "secret" })}
-                            className="inline-flex items-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-800 transition-colors hover:bg-amber-100"
-                        >
-                            <Lock className="h-4 w-4" />
-                            Unlock editing
-                        </button>
-                    )}
                     <button
                         onClick={() => void autoPair()}
                         disabled={!canEdit || busy}
@@ -1108,18 +1078,6 @@ export function ResourceWorkbench() {
                             refresh produces from the live listings.
                         </>
                     }
-                    onConfirm={confirmPending}
-                    onCancel={() => setPending(null)}
-                />
-            )}
-
-            {pending?.kind === "secret" && (
-                <ConfirmDialog
-                    title="Unlock editing"
-                    confirmLabel="Save for this tab"
-                    withReason
-                    reasonLabel="Admin secret"
-                    body="Writing to the pairing store is gated on ADMIN_SECRET. It is kept in this tab's session storage only."
                     onConfirm={confirmPending}
                     onCancel={() => setPending(null)}
                 />

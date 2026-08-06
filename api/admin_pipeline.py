@@ -9,10 +9,11 @@ having beyond convenience:
     force=true    re-pushes the corpus even when its hash is unchanged. The repair path for a
                   copilot edited outside this system, which the hash comparison cannot see.
 
-THIS ROUTE IS UNAUTHENTICATED, BY DECISION AND NOT BY OVERSIGHT. It was built behind
-ADMIN_SECRET and the gate was removed on request: a shared secret typed per browser tab was
-judged more friction than it was worth for an internal tool. Read that as a deliberate posture,
-not a bug to quietly patch -- but read it clearly, because the blast radius is real:
+THIS ROUTE IS UNAUTHENTICATED, BY DECISION AND NOT BY OVERSIGHT. It was built behind a shared
+secret and the gate was removed on request: a secret typed per browser tab was judged more
+friction than it was worth for an internal tool. The pairing writes in api/resource_links.py
+were opened for the same reason. Read that as a deliberate posture, not a bug to quietly patch
+-- but read it clearly, because the blast radius is real:
 
     anyone who knows this path can rewrite the instructions of six production copilots,
     upload to the Fuel IX vector store, and rebuild the French pairing table.

@@ -23,9 +23,9 @@ from __future__ import annotations
 import os
 import sys
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
-from fastapi import FastAPI, Header, HTTPException
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
@@ -269,7 +269,6 @@ def _build_report() -> Dict[str, Any]:
             "error": table.error,
             "overrides": summary["manualOverrides"],
         },
-        "authRequired": _auth_required(),
         "errors": errors,
     }
 
@@ -297,22 +296,15 @@ def resource_links_report() -> JSONResponse:
 
 # --- mutations ----------------------------------------------------------------------------
 #
-# These change which French document a clinician is sent to, so they are gated on a shared
-# secret when one is configured. The gate is opt-in because /admin has no auth of its own yet:
-# making it mandatory would lock the page's own controls out by default. Set ADMIN_SECRET and
-# the write paths close.
-
-
-def _auth_required() -> bool:
-    return bool((os.getenv("ADMIN_SECRET") or "").strip())
-
-
-def _require_admin(secret: Optional[str]) -> None:
-    expected = (os.getenv("ADMIN_SECRET") or "").strip()
-    if not expected:
-        return
-    if (secret or "").strip() != expected:
-        raise HTTPException(status_code=401, detail="Invalid or missing admin secret.")
+# These change which French document a clinician is sent to, and they are unauthenticated. A
+# shared-secret gate used to stand here and was removed on request, the same decision and for
+# the same reason as /api/admin/pipeline/run -- see the note at the top of api/admin_pipeline.py.
+# Read it as a deliberate posture, not an oversight.
+#
+# What limits the damage, none of it authentication: no write here destroys anything the system
+# cannot rebuild. A manual row overwrites rather than deletes, unpair records a suppression
+# instead of removing the link, and clearing every override leaves the matcher to re-derive all
+# the auto pairs from the live listings on the next run.
 
 
 def _store_error(exc: Exception) -> HTTPException:
@@ -327,11 +319,8 @@ class PairRequest(BaseModel):
 
 
 @app.post("/api/resource-links/pairs")
-def create_pair(
-    payload: PairRequest, x_admin_secret: Optional[str] = Header(default=None)
-) -> Dict[str, Any]:
+def create_pair(payload: PairRequest) -> Dict[str, Any]:
     """Record a human's EN->FR decision. Written as origin='manual', so the cron will not touch it."""
-    _require_admin(x_admin_secret)
     from scripts.content_pipeline.state import ORIGIN_MANUAL as MANUAL, StateError, StoredPair, upsert_pair
     from scripts.content_pipeline.urls import normalize_url
 
@@ -359,15 +348,12 @@ class UnpairRequest(BaseModel):
 
 
 @app.post("/api/resource-links/unpair")
-def unpair(
-    payload: UnpairRequest, x_admin_secret: Optional[str] = Header(default=None)
-) -> Dict[str, Any]:
+def unpair(payload: UnpairRequest) -> Dict[str, Any]:
     """Remove whatever French link an English tool has, from any source.
 
     Recorded as a manual row with a null French URL rather than a delete, because a plain delete
     would let the next cron run re-derive the very pairing the reviewer just rejected.
     """
-    _require_admin(x_admin_secret)
     from scripts.content_pipeline.state import ORIGIN_MANUAL as MANUAL, StateError, StoredPair, upsert_pair
 
     en_url = (payload.enUrl or "").strip()
@@ -383,13 +369,12 @@ def unpair(
 
 
 @app.post("/api/resource-links/auto-pair")
-def auto_pair(x_admin_secret: Optional[str] = Header(default=None)) -> Dict[str, Any]:
+def auto_pair() -> Dict[str, Any]:
     """Run the matcher now instead of waiting for the nightly cron.
 
     Identical to what the cron does, so this adds nothing a scheduled run would not; it just
     makes the result visible immediately. Manual rows are untouched.
     """
-    _require_admin(x_admin_secret)
     from scripts.content_pipeline.pairing import sync_pairs
 
     report = sync_pairs(dry_run=False)
@@ -407,13 +392,12 @@ def auto_pair(x_admin_secret: Optional[str] = Header(default=None)) -> Dict[str,
 
 
 @app.delete("/api/resource-links/overrides")
-def clear_overrides(x_admin_secret: Optional[str] = Header(default=None)) -> Dict[str, Any]:
+def clear_overrides() -> Dict[str, Any]:
     """Drop every manual decision, leaving only what the matcher derives.
 
     Safe by construction: the next refresh re-derives every auto pair from the live listings, so
     the worst case is losing hand-made pairings, not losing the map.
     """
-    _require_admin(x_admin_secret)
     from scripts.content_pipeline.state import ORIGIN_MANUAL as MANUAL, StateError, load_resource_pairs
     from scripts.content_pipeline.state import delete_pair
 
