@@ -2,6 +2,12 @@
 // Record<TranslationKey, string>, so a missing French string is a compile error rather than a
 // silent fallback to the key name.
 export const en = {
+    // Document-level. Applied to <title> and <meta name="description"> by LanguageProvider,
+    // because `metadata` in app/layout.tsx is resolved on the server, where the locale (which
+    // lives in sessionStorage) is not knowable.
+    "meta.title": "ConcussCare",
+    "meta.description": "Concussion healthcare assistant",
+
     "nav.chatbot": "Chatbot",
     "nav.about": "About us",
     "nav.sources": "Source of information",

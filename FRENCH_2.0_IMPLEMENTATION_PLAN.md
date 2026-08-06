@@ -1,8 +1,8 @@
 # ConcussCare 2.0 — Bilingual Rework: Implementation Plan
 
-Supersedes the "Suggested build order" section of `FRENCH_2.0_GAP_ANALYSIS.md`. That document
-remains the record of the *pre-rework* state and of the client's 13-point request; this
-document is the agreed design and build order.
+The agreed design and build order. Supersedes the earlier `FRENCH_2.0_GAP_ANALYSIS.md`, which
+described the pre-rework state and has been deleted now that it no longer matches the code —
+recover it from git history if the original 13-point request needs citing.
 
 > **Status: phases 0–5 implemented and verified.** Deterministic heading normalization and
 > drift logging were deliberately skipped (see end of Phase 0). Remaining blockers are the

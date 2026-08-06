@@ -2,6 +2,11 @@ import type { TranslationKey } from "./en";
 
 // Typed as Record<TranslationKey, string>: omitting a key is a compile error.
 export const fr: Record<TranslationKey, string> = {
+    // The brand name is not translated, so "meta.title" matches the English — same convention
+    // as "chat.welcomeTitle" and "message.assistant".
+    "meta.title": "ConcussCare",
+    "meta.description": "Assistant en soins des commotions cérébrales",
+
     "nav.chatbot": "Robot conversationnel",
     "nav.about": "À propos",
     "nav.sources": "Sources d'information",

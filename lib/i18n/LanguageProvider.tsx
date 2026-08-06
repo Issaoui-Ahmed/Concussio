@@ -8,6 +8,7 @@ import React, {
     useMemo,
     useSyncExternalStore,
 } from "react";
+import { usePathname } from "next/navigation";
 import { en, type TranslationKey } from "./en";
 import { fr } from "./fr";
 
@@ -54,9 +55,23 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     const locale = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
     const setLocale = useCallback((next: Locale) => writeLocale(next), []);
 
+    // Re-applied on navigation as well as on locale change: every public route inherits the
+    // static `metadata` from app/layout.tsx, so a soft navigation re-renders <head> and puts
+    // the English title back.
+    const pathname = usePathname();
+
     useEffect(() => {
         document.documentElement.lang = locale;
-    }, [locale]);
+        document.title = DICTIONARIES[locale]["meta.title"];
+
+        let description = document.querySelector('meta[name="description"]');
+        if (!description) {
+            description = document.createElement("meta");
+            description.setAttribute("name", "description");
+            document.head.appendChild(description);
+        }
+        description.setAttribute("content", DICTIONARIES[locale]["meta.description"]);
+    }, [locale, pathname]);
 
     const value = useMemo(() => ({ locale, setLocale }), [locale, setLocale]);
 
