@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Loader2 } from "lucide-react";
 
 /**
- * Mounted only while open, rather than kept mounted with an `open` prop. That is what makes the
- * reason field start empty every time without an effect resetting it — the component simply has
- * not existed since the last dialog closed.
+ * Mounted only while open, rather than kept mounted with an `open` prop, so nothing has to be
+ * reset between openings — the component simply has not existed since the last dialog closed.
  *
  * Shared by the pairing workbench and the pipeline runner, which both need the same thing: a
  * last look before something irreversible.
@@ -16,9 +15,6 @@ export function ConfirmDialog({
     body,
     confirmLabel,
     tone = "brand",
-    withReason,
-    reasonLabel,
-    reasonPlaceholder,
     busy,
     onConfirm,
     onCancel,
@@ -27,15 +23,10 @@ export function ConfirmDialog({
     body: React.ReactNode;
     confirmLabel: string;
     tone?: "brand" | "danger";
-    withReason?: boolean;
-    reasonLabel?: string;
-    reasonPlaceholder?: string;
     busy?: boolean;
-    onConfirm: (reason: string) => void;
+    onConfirm: () => void;
     onCancel: () => void;
 }) {
-    const [reason, setReason] = useState("");
-
     useEffect(() => {
         const onKey = (event: KeyboardEvent) => {
             if (event.key === "Escape") onCancel();
@@ -51,25 +42,6 @@ export function ConfirmDialog({
                 <h3 className="text-base font-semibold text-gray-900">{title}</h3>
                 <div className="mt-2 text-sm leading-relaxed text-gray-600">{body}</div>
 
-                {withReason && (
-                    <label className="mt-4 block">
-                        <span className="text-xs font-medium uppercase tracking-wide text-gray-400">
-                            {reasonLabel ?? "Reason"}
-                        </span>
-                        <textarea
-                            value={reason}
-                            onChange={event => setReason(event.target.value)}
-                            rows={3}
-                            autoFocus
-                            placeholder={
-                                reasonPlaceholder ??
-                                "Why — so the next reviewer does not have to work it out again."
-                            }
-                            className="mt-1 w-full resize-none rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 outline-none transition-colors placeholder:text-gray-400 focus:border-[#00417d] focus:ring-2 focus:ring-[#00417d]/15"
-                        />
-                    </label>
-                )}
-
                 <div className="mt-5 flex justify-end gap-2">
                     <button
                         onClick={onCancel}
@@ -78,7 +50,7 @@ export function ConfirmDialog({
                         Cancel
                     </button>
                     <button
-                        onClick={() => onConfirm(reason)}
+                        onClick={() => onConfirm()}
                         disabled={busy}
                         className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
                             tone === "danger"
