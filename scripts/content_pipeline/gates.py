@@ -41,21 +41,13 @@ class GateResult:
     detail: str
 
 
-def _count_units(manifest: Optional[Dict[str, object]], kind: str) -> int:
-    units: Dict[str, Dict[str, str]] = (manifest or {}).get("units", {})  # type: ignore[assignment]
-    return sum(1 for unit in units.values() if unit.get("kind") == kind)
-
-
-def gate_fetch_sane(
-    fetched: FetchResult,
-    previous_manifest: Optional[Dict[str, object]] = None,
-) -> GateResult:
+def gate_fetch_sane(fetched: FetchResult) -> GateResult:
     """Shrink guard: refuse to proceed from a fetch that looks like a broken selector.
 
-    Compares this run against the previous one, NOT against the pair set. Run-over-run is the
-    only comparison that means anything now that the pair set is itself scrape-derived:
-    checking the fetch against it would be checking a scrape against the previous scrape's
-    output, which agrees by construction and so detects nothing.
+    Absolute floors only. The run-over-run comparison that used to live here read
+    `data/content-manifest.json`, which no longer exists -- each sink now carries its own
+    proportional guard against the state it actually writes (`vector_store.MAX_REMOVAL_RATIO`,
+    and the floors in `pairing`), which is a truer comparison than a shared manifest was.
     """
     problems: List[str] = []
 
@@ -67,39 +59,19 @@ def gate_fetch_sane(
         problems.append(
             f"only {len(fetched.french_resources)} FR resources (expected >= {MIN_FRENCH_RESOURCES})"
         )
-
-    # Run over run: a listing that suddenly loses a tenth of its entries changed shape.
-    for kind, current in (
-        ("en-resource", len(fetched.english_tools)),
-        ("fr-resource", len(fetched.french_resources)),
-    ):
-        baseline = _count_units(previous_manifest, kind)
-        if baseline and current < baseline * (1 - MAX_SHRINK_RATIO):
-            problems.append(
-                f"{kind} count fell {baseline} -> {current} "
-                f"(>{MAX_SHRINK_RATIO:.0%} drop from the last good run)"
-            )
-
     if fetched.errors:
         problems.append(f"{len(fetched.errors)} fetch error(s): {fetched.errors[0]}")
 
     if problems:
         return GateResult("fetch-sane", False, "; ".join(problems))
-
-    baseline_en = _count_units(previous_manifest, "en-resource")
-    against = f" (last run: {baseline_en} EN)" if baseline_en else " (no previous run)"
     return GateResult(
         "fetch-sane",
         True,
-        f"{len(fetched.english_tools)} EN / {len(fetched.french_resources)} FR resources{against}",
+        f"{len(fetched.english_tools)} EN / {len(fetched.french_resources)} FR resources",
     )
 
 
-def gate_corpus_sane(
-    markdown: str,
-    domains: Dict[str, object],
-    previous_manifest: Optional[Dict[str, object]] = None,
-) -> GateResult:
+def gate_corpus_sane(markdown: str, domains: Dict[str, object]) -> GateResult:
     """Shrink guard for the recommendations corpus.
 
     `core/scraper.py:561` swallows a failed section fetch into an empty dict, so a network
@@ -127,13 +99,24 @@ def gate_corpus_sane(
     if empty:
         problems.append(f"{len(empty)} domain(s) rendered empty: {empty[:3]}")
 
-    previous = (previous_manifest or {}).get("corpus", {}) if previous_manifest else {}
-    baseline = previous.get("recommendations") if isinstance(previous, dict) else None
+    # Run over run, against what was actually published rather than a committed file. A
+    # store outage leaves `baseline` None, which correctly means "no comparison available"
+    # rather than "no shrink".
+    baseline = None
+    try:
+        from scripts.content_pipeline.state import load_corpus_state
+
+        state = load_corpus_state()
+        if state.found and not state.error:
+            baseline = state.meta.get("recommendations")
+    except Exception:
+        baseline = None
+
     if isinstance(baseline, int) and baseline:
         if len(stats.recommendation_numbers) < baseline * (1 - MAX_SHRINK_RATIO):
             problems.append(
                 f"recommendation count fell {baseline} -> {len(stats.recommendation_numbers)} "
-                f"(>{MAX_SHRINK_RATIO:.0%} drop)"
+                f"(>{MAX_SHRINK_RATIO:.0%} drop from what was last published)"
             )
 
     if problems:

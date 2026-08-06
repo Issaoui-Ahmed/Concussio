@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, Download, Loader2, RefreshCw } from "lucide-react";
 import { ResourceWorkbench } from "@/components/ResourceWorkbench";
+import { ContentPipelineRunner } from "@/components/ContentPipelineRunner";
 
 interface ScrapedDomain {
   domain: string;
@@ -29,6 +30,10 @@ const REFRESH_MS = 60_000;
 
 export default function AdminScrapingPage() {
   const [data, setData] = useState<ScrapingResponse | null>(null);
+  // Bumped when a pipeline run actually writes pairings, which remounts the workbench below.
+  // Otherwise it would keep rendering the table as it was before the run that just changed it —
+  // stale data directly beneath a panel saying what changed.
+  const [workbenchKey, setWorkbenchKey] = useState(0);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [isManualRefreshing, setIsManualRefreshing] = useState(false);
   const [isDownloadingTools, setIsDownloadingTools] = useState(false);
@@ -155,7 +160,13 @@ export default function AdminScrapingPage() {
                 ) : (
                   <RefreshCw className="h-4 w-4" />
                 )}
-                Refresh now
+                {/*
+                  "Refresh view", not "Refresh now": this re-reads the scrape cache behind this
+                  page and publishes nothing. The pipeline card below is the one that writes.
+                  Two buttons both saying "refresh" on one screen, one of which patches six
+                  production copilots, is a trap worth naming your way out of.
+                */}
+                Refresh view
               </button>
             </div>
           </div>
@@ -191,6 +202,12 @@ export default function AdminScrapingPage() {
         </div>
 
         {/*
+          Runs the nightly refresh on demand and reports its diff. Sits above the workbench
+          because it is what makes the workbench's contents change.
+        */}
+        <ContentPipelineRunner onApplied={() => setWorkbenchKey(key => key + 1)} />
+
+        {/*
           The single view of the Living Guideline Tools and their French counterparts. Loads
           independently of the recommendations scrape below, so it appears immediately.
 
@@ -199,7 +216,7 @@ export default function AdminScrapingPage() {
           links on the Tools & Resources page down to that one section; the rest is third-party
           material with no French counterpart to pair against.
         */}
-        <ResourceWorkbench />
+        <ResourceWorkbench key={workbenchKey} />
 
         {isInitialLoading ? (
           <div className="rounded-2xl border border-gray-100 bg-white p-12 text-center text-gray-500 shadow-sm">

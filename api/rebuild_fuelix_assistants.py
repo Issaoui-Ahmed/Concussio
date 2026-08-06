@@ -22,11 +22,17 @@ DEFAULT_FUELIX_BASE_URL = "https://api.fuelix.ai/v1"
 DEFAULT_MODEL = "gpt-5.2"
 DEFAULT_REASONING_EFFORT = "low"
 
-SOURCE_VECTOR_STORE_NAMES = [
-    "Living guideline tools",
-    "Key papers to include",
-]
-ASSISTANT_VECTOR_STORE_NAME = "ConcussCare Combined Knowledge"
+# The single store all six assistants read. It holds both groups of documents: the Living
+# Guideline Tools (kept in step by scripts/content_pipeline/vector_store.py) and the research
+# papers, which are curated by hand and have no upstream link.
+#
+# There used to be two source stores combined into a third. That structure is gone -- the
+# sources were deleted on 2026-08-02 once the combined store was confirmed to hold every one of
+# their files by shared id. This script's names were wrong even before that: it looked for
+# "Key papers to include" and "ConcussCare Combined Knowledge", neither of which ever existed.
+# Running it would have raised on the missing sources; had that guard been bypassed it would
+# have built a fresh empty store and repointed all six production assistants at it.
+KNOWLEDGE_STORE_NAME = "ConcussCare Coach Knowledge Base"
 
 ASSISTANT_SPECS = [
     ("patient", "ConcussCare Patient"),
@@ -177,28 +183,27 @@ def _find_by_name(items: List[Dict[str, Any]], name: str) -> Optional[Dict[str, 
     return None
 
 
-def _resolve_source_vector_store_ids() -> List[str]:
+def _resolve_knowledge_store_id() -> str:
+    """Find the store the assistants read. Never creates one.
+
+    Refusing to create is the whole safety property here. A missing store means something is
+    wrong with the account or the name, and the harmful response to that is to helpfully make an
+    empty one -- every assistant would then be wired to a knowledge base with nothing in it, and
+    the failure would show up as bad answers rather than an error.
+    """
     stores = _paginated_items("/vector_stores", params={"order": "desc"})
-    ids: List[str] = []
-    missing: List[str] = []
-
-    for name in SOURCE_VECTOR_STORE_NAMES:
-        store = _find_by_name(stores, name)
-        store_id = store.get("id") if isinstance(store, dict) else None
-        if isinstance(store_id, str) and store_id:
-            ids.append(store_id)
-        else:
-            missing.append(name)
-
-    if missing:
-        raise FuelIxRebuildError(f"Missing required Fuel IX vector stores: {', '.join(missing)}")
-    return ids
-
-
-def _resolve_store_id_by_name(name: str) -> Optional[str]:
-    store = _find_by_name(_paginated_items("/vector_stores", params={"order": "desc"}), name)
+    store = _find_by_name(stores, KNOWLEDGE_STORE_NAME)
     store_id = store.get("id") if isinstance(store, dict) else None
-    return store_id if isinstance(store_id, str) and store_id else None
+    if not isinstance(store_id, str) or not store_id:
+        available = ", ".join(
+            str(item.get("name")) for item in stores if isinstance(item, dict)
+        ) or "(none)"
+        raise FuelIxRebuildError(
+            f'Vector store "{KNOWLEDGE_STORE_NAME}" not found, and this script will not create '
+            f"one -- pointing the assistants at an empty store is worse than failing. "
+            f"Available stores: {available}"
+        )
+    return store_id
 
 
 def _vector_store_file_ids(vector_store_id: str) -> List[str]:
@@ -210,64 +215,63 @@ def _vector_store_file_ids(vector_store_id: str) -> List[str]:
     return ids
 
 
-def _create_combined_vector_store(source_vector_store_ids: List[str]) -> str:
-    payload = _request(
-        "POST",
-        "/vector_stores",
-        json_body={
-            "name": ASSISTANT_VECTOR_STORE_NAME,
-            "metadata": {
-                "purpose": "concusscare_combined_knowledge",
-                "source_vector_store_names": SOURCE_VECTOR_STORE_NAMES,
-                "source_vector_store_ids": source_vector_store_ids,
-                "rebuild_source": "api/rebuild_fuelix_assistants.py",
-            },
-        },
-    )
-    store_id = payload.get("id") if isinstance(payload, dict) else None
-    if not isinstance(store_id, str) or not store_id:
-        raise FuelIxRebuildError(f"Combined vector store was created without id: {payload}")
-    return store_id
+def _published_corpus() -> str:
+    """The recommendations corpus as actually published, read from Supabase.
+
+    NOT `all_rec_markdown.md`. Nothing writes that file any more -- the nightly refresh runs on
+    Vercel, where the filesystem is read-only, so it publishes from a live scrape and records
+    what it sent in `content_state`. The committed file is a local-dev convenience that drifts
+    the moment the site changes.
+
+    That drift matters here specifically: this script rewrites the instructions of all six
+    production assistants. Building them from a stale file would quietly roll the guideline back
+    to whenever the file was last refreshed by hand.
+    """
+    from scripts.content_pipeline.state import load_corpus_state
+
+    state = load_corpus_state()
+    if state.error:
+        raise FuelIxRebuildError(
+            f"Could not read the published corpus from Supabase: {state.error}. "
+            f"Refusing to rebuild assistants from a possibly stale local file."
+        )
+    if not state.found or not state.content:
+        raise FuelIxRebuildError(
+            "No corpus has been published yet (content_state is empty). Run the refresh first: "
+            "python -m scripts.content_pipeline.cli refresh --corpus"
+        )
+    return state.content
 
 
-def _ensure_combined_vector_store(source_vector_store_ids: List[str], *, dry_run: bool) -> tuple[Optional[str], List[str]]:
-    source_file_ids: List[str] = []
-    for source_store_id in source_vector_store_ids:
-        source_file_ids.extend(_vector_store_file_ids(source_store_id))
-    source_file_ids = list(dict.fromkeys(source_file_ids))
-    if not source_file_ids:
-        raise FuelIxRebuildError("Source vector stores do not contain any files.")
+def _inspect_knowledge_store() -> tuple[str, List[str]]:
+    """Resolve the store and read its contents. Read-only.
 
-    combined_store_id = _resolve_store_id_by_name(ASSISTANT_VECTOR_STORE_NAME)
-    if not combined_store_id and dry_run:
-        return None, source_file_ids
-    if not combined_store_id:
-        combined_store_id = _create_combined_vector_store(source_vector_store_ids)
-
-    existing_file_ids = set(_vector_store_file_ids(combined_store_id))
-    for file_id in source_file_ids:
-        if file_id in existing_file_ids:
-            continue
-        if dry_run:
-            continue
-        try:
-            _request(
-                "POST",
-                f"/vector_stores/{combined_store_id}/files",
-                json_body={"file_id": file_id},
-            )
-        except FuelIxRebuildError as exc:
-            if "already exists in this knowledge base" not in str(exc):
-                raise
-    return combined_store_id, source_file_ids
+    This script's job is assistants, not knowledge. It used to copy file ids between stores to
+    assemble a combined one; that is now the content pipeline's business
+    (`scripts/content_pipeline/vector_store.py`), which keeps the tool documents in step with
+    the live listing and leaves the hand-curated papers alone. Duplicating any of that here
+    would give two things permission to mutate the same store on different rules.
+    """
+    store_id = _resolve_knowledge_store_id()
+    file_ids = _vector_store_file_ids(store_id)
+    if not file_ids:
+        raise FuelIxRebuildError(
+            f'Vector store "{KNOWLEDGE_STORE_NAME}" ({store_id}) is empty. Refusing to wire the '
+            f"assistants to a knowledge base with no documents."
+        )
+    return store_id, file_ids
 
 
-def _assistant_payload(user_type: str, name: str, vector_store_ids: List[str], model: str) -> Dict[str, Any]:
+def _assistant_payload(
+    user_type: str, name: str, vector_store_ids: List[str], model: str, corpus: str
+) -> Dict[str, Any]:
     return {
         "name": name,
         "description": f"ConcussCare assistant for {user_type}.",
         "model": model,
-        "instructions": build_fuelix_assistant_instructions(user_type),
+        "instructions": build_fuelix_assistant_instructions(
+            user_type, recommendations_markdown=corpus
+        ),
         "tools": [{"type": "reasoning"}],
         "reasoning": {"effort": DEFAULT_REASONING_EFFORT},
         "reasoning_effort": DEFAULT_REASONING_EFFORT,
@@ -275,8 +279,7 @@ def _assistant_payload(user_type: str, name: str, vector_store_ids: List[str], m
         "metadata": {
             "user_type": user_type,
             "reasoning_effort": DEFAULT_REASONING_EFFORT,
-            "vector_store_names": [ASSISTANT_VECTOR_STORE_NAME],
-            "source_vector_store_names": SOURCE_VECTOR_STORE_NAMES,
+            "vector_store_names": [KNOWLEDGE_STORE_NAME],
             "rebuild_source": "api/rebuild_fuelix_assistants.py",
         },
     }
@@ -290,11 +293,12 @@ def rebuild_assistant(
     existing_assistants: List[Dict[str, Any]],
     model: str,
     dry_run: bool,
+    corpus: str,
 ) -> AssistantRebuildResult:
     result = AssistantRebuildResult(user_type=user_type, name=name)
     existing = _find_by_name(existing_assistants, name)
     existing_id = existing.get("id") if isinstance(existing, dict) else None
-    payload = _assistant_payload(user_type, name, vector_store_ids, model)
+    payload = _assistant_payload(user_type, name, vector_store_ids, model, corpus)
 
     try:
         if isinstance(existing_id, str) and existing_id:
@@ -327,9 +331,8 @@ def rebuild_assistant(
 
 def _write_summary(
     results: List[AssistantRebuildResult],
-    source_vector_store_ids: List[str],
-    assistant_vector_store_id: Optional[str],
-    assistant_vector_store_file_ids: List[str],
+    knowledge_store_id: str,
+    knowledge_store_file_ids: List[str],
     *,
     model: str,
     dry_run: bool,
@@ -340,11 +343,9 @@ def _write_summary(
         "fuelix_product_id": os.getenv("FUELIX_PRODUCT_ID", "core").strip() or None,
         "model": model,
         "reasoning_effort": DEFAULT_REASONING_EFFORT,
-        "source_vector_store_ids": source_vector_store_ids,
-        "source_vector_store_names": SOURCE_VECTOR_STORE_NAMES,
-        "assistant_vector_store_id": assistant_vector_store_id,
-        "assistant_vector_store_name": ASSISTANT_VECTOR_STORE_NAME,
-        "assistant_vector_store_file_count": len(assistant_vector_store_file_ids),
+        "knowledge_store_id": knowledge_store_id,
+        "knowledge_store_name": KNOWLEDGE_STORE_NAME,
+        "knowledge_store_file_count": len(knowledge_store_file_ids),
         "assistants": [asdict(result) for result in results],
         "counts": {
             "assistants_total": len(results),
@@ -375,28 +376,25 @@ def main() -> int:
     print(f"Fuel IX product-id: {os.getenv('FUELIX_PRODUCT_ID', 'core').strip() or '(none)'}")
     print(f"Model: {args.model}")
 
-    source_vector_store_ids = _resolve_source_vector_store_ids()
-    print(f"Source vector stores: {', '.join(source_vector_store_ids)}")
-    assistant_vector_store_id, assistant_vector_store_file_ids = _ensure_combined_vector_store(
-        source_vector_store_ids,
-        dry_run=dry_run,
-    )
+    knowledge_store_id, knowledge_store_file_ids = _inspect_knowledge_store()
     print(
-        "Assistant vector store: "
-        + (assistant_vector_store_id or f"{ASSISTANT_VECTOR_STORE_NAME} (would create)")
-        + f" with {len(assistant_vector_store_file_ids)} source files"
+        f"Knowledge store: {KNOWLEDGE_STORE_NAME} ({knowledge_store_id}) "
+        f"with {len(knowledge_store_file_ids)} files"
     )
 
+    corpus = _published_corpus()
+    print(f"Corpus: {len(corpus)} chars, as published (from content_state)")
+
     existing_assistants = _paginated_items("/assistants", params={"order": "desc"})
-    assistant_vector_store_ids = [assistant_vector_store_id] if assistant_vector_store_id else []
     results = [
         rebuild_assistant(
             user_type,
             name,
-            vector_store_ids=assistant_vector_store_ids,
+            vector_store_ids=[knowledge_store_id],
             existing_assistants=existing_assistants,
             model=args.model,
             dry_run=dry_run,
+            corpus=corpus,
         )
         for user_type, name in ASSISTANT_SPECS
     ]
@@ -410,9 +408,8 @@ def main() -> int:
 
     summary_path = _write_summary(
         results,
-        source_vector_store_ids,
-        assistant_vector_store_id,
-        assistant_vector_store_file_ids,
+        knowledge_store_id,
+        knowledge_store_file_ids,
         model=args.model,
         dry_run=dry_run,
     )

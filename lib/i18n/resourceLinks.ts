@@ -10,13 +10,16 @@
 // the swap happened at generation time, toggling a French answer to English would leave French
 // links behind. Link language has to follow the locale that is being *rendered*.
 //
-// THE DATA LIVES IN `./resourceLinks.data.ts`, which is GENERATED from
-// `data/resource-pairs.json` — the reviewed source of truth. Add or change a mapping there,
-// never here. The logic below is hand-written and covered by tests; the pipeline is not
-// allowed to rewrite it.
+// THE SOURCE OF TRUTH IS THE `resource_pairs` TABLE IN SUPABASE, served by
+// `/api/resource-links` and swapped in at runtime by `./resourceLinkStore.ts`. Add or change a
+// mapping in /admin/scraping, never here.
 //
-// Every French URL is confirmed live before it enters the data file. A French link that 404s
-// is worse than the English original it replaces. When a resource has no French version the
+// `./resourceLinks.data.ts` is GENERATED from that table (`cli render`) and is only the offline
+// fallback, for when the endpoint cannot be reached. The logic below is hand-written and covered
+// by tests; the pipeline is not allowed to rewrite it.
+//
+// Every French URL is confirmed live by the liveness gate before it ships. A French link that
+// 404s is worse than the English original it replaces. When a resource has no French version the
 // English URL is left alone — that is the intended fallback, not a gap.
 
 import { RESOURCES, type FrenchResource } from "./resourceLinks.data";

@@ -43,6 +43,8 @@ api/fuelix_assistant_rebuild_*.json
 
 # env files (can opt-in for committing if needed)
 .env*
+# ...opted in: the template carries no secrets and is the only record of what a run needs.
+!.env.example
 
 # vercel
 .vercel

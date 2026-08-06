@@ -3,7 +3,11 @@
 English recommendations and English tools already have working extractors in
 ``core.scraper``; this module adds the French resource listings, which had no coverage.
 
-French recommendations are deliberately NOT fetched — see CONTENT_PIPELINE_PLAN.md §10.
+French recommendations are deliberately NOT fetched. One assistant per user type serves both
+languages, answering in French from the English corpus, so a French corpus would mean either
+twelve assistants or moving the corpus out of assistant instructions entirely. The `/fr/`
+guideline pages also carry no `#rec-NNN` anchors, so a French answer could deep-link to a domain
+page but never to an individual recommendation. Revisit only if French answer quality is raised.
 """
 
 from __future__ import annotations
@@ -79,24 +83,21 @@ def living_tools(resources: Iterable["Resource"]) -> List["Resource"]:
 
     The listing carries a second block below them, "Online Tools and Resources": CDC forms,
     CATT strategies, consensus statements, the SCAT/SCOAT instruments. That material is
-    third-party and has no French counterpart on this site, so pairing it is not something the
-    guideline can speak to. 96 in, 27 out.
+    third-party, is not part of the guideline, and has no French counterpart on this site.
+    96 in, 27 out.
 
-    **One definition, shared by the runtime map and the refresh job.** They used to disagree —
-    the refresh job matched over all 96 — which meant it could write a pair for a resource the
-    admin view does not list, and the report then had to invent a placeholder row so the pair
-    was not left dangling. Those placeholders were the "alias" rows; nothing wanted them.
+    **Returns nothing when the heading is missing or empty. Deliberately.** This used to fall
+    back to the unfiltered listing on the theory that an over-full table beats an empty one.
+    That reasoning held for the pairing table, where a spurious row is visible and removable,
+    and was badly wrong for the vector store, where it is not: the tagging keys off a heading a
+    redesign could rename, and a rename would have handed all 96 resources to the store sync as
+    if the guideline had published 69 new tools overnight.
 
-    Callers keep the full 96 where breadth is the point: the RAG vector-store sync and the
-    pipeline's count gates both need the whole listing.
-
-    Falls back to the unfiltered list if nothing carries the tag. The tagging in
-    ``fetch_english_tools`` is best-effort and keys off a heading a site redesign could rename;
-    an over-full table beats an empty one.
+    An empty result is a loud failure — every consumer floors on a minimum count and refuses —
+    which is the right outcome. The job is to scrape what is under that heading. If the heading
+    is not there, the answer is "nothing", not "everything".
     """
-    listing = list(resources)
-    tagged = [resource for resource in listing if resource.group == GROUP_LIVING_TOOL]
-    return tagged or listing
+    return [resource for resource in resources if resource.group == GROUP_LIVING_TOOL]
 
 
 @dataclass
@@ -260,8 +261,11 @@ def fetch_english_tools(url: str = TOOLS_RESOURCES_URL) -> tuple[List[Resource],
 
     resources = extract_resources(html, base_url=url, lang="en")
 
-    # Provenance only. A failure here must not cost us the listing itself, hence the guard:
-    # this extractor keys off a heading that a site redesign could rename.
+    # Which entries sit under the "Living Guideline Tools" heading. This is no longer mere
+    # provenance -- `living_tools()` returns exactly these and nothing else -- so a failure here
+    # is reported rather than swallowed. The extractor keys off a heading a redesign could
+    # rename, and that is precisely the case the caller's floors need to see.
+    errors: List[str] = []
     try:
         from core.scraper import extract_living_guideline_tools
 
@@ -272,10 +276,16 @@ def fetch_english_tools(url: str = TOOLS_RESOURCES_URL) -> tuple[List[Resource],
         for resource in resources:
             if normalize_url(resource.url) in living:
                 resource.group = GROUP_LIVING_TOOL
-    except Exception:
-        pass
+        if not living:
+            errors.append(
+                f"{url}: the 'Living Guideline Tools' heading yielded no tools "
+                f"({len(resources)} resources listed on the page). The heading may have been "
+                f"renamed or restructured."
+            )
+    except Exception as exc:
+        errors.append(f"{url}: could not identify Living Guideline Tools: {type(exc).__name__}: {exc}")
 
-    return resources, []
+    return resources, errors
 
 
 def fetch_all() -> FetchResult:

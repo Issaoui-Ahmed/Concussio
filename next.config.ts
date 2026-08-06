@@ -11,7 +11,10 @@ const nextConfig: NextConfig = {
   // <distDir>/dev/lock, so a separate directory avoids "Unable to acquire lock".
   distDir: process.env.NEXT_DIST_DIR || ".next",
   experimental: {
-    proxyTimeout: 120000,
+    // Matches `maxDuration` in vercel.json. Below it, a slow /api/admin/pipeline/run would be
+    // cut off by the dev proxy rather than by the function, so local behaviour would differ
+    // from deployed for the one route where the difference is hardest to diagnose.
+    proxyTimeout: 300000,
   },
   rewrites: async () => {
     if (process.env.NODE_ENV === "development") {

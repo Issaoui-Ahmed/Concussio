@@ -1,0 +1,324 @@
+{
+  "_comment": "Recorded by `python -m scripts.content_pipeline.simulate --capture`. Fuel IX store and file ids are redacted: the dry-run paths never dereference them.",
+  "pages": {
+    "https://pedsconcussion.com/tools-resources/": "listing-en.html",
+    "https://pedsconcussion.com/ressources/": "listing-fr-ressources.html",
+    "https://pedsconcussion.com/ressources-en-francais/": "listing-fr-ressources.html"
+  },
+  "vectorStoreFiles": [
+    {
+      "sourceUrl": "https://pedsconcussion.com/diagnostic_criteria/%20",
+      "title": "2023 ACRM Diagnostic Criteria",
+      "storeId": "vs_fixture",
+      "fileId": "file_fixture_000",
+      "filename": "ACRM_diagnostic.txt",
+      "uploadedBy": "adopted"
+    },
+    {
+      "sourceUrl": "https://pedsconcussion.com/recognition/",
+      "title": "Concussion Recognition Tool 6. To help identify concussion in children, adolescents, and adults (2023)",
+      "storeId": "vs_fixture",
+      "fileId": "file_fixture_001",
+      "filename": "Tool 1.2 - CRT6.txt",
+      "uploadedBy": "adopted"
+    },
+    {
+      "sourceUrl": "https://pedsconcussion.com/return-to-activity-sport-school/",
+      "title": "Living Guideline Return to Activity Sports and School Protocol",
+      "storeId": "vs_fixture",
+      "fileId": "file_fixture_002",
+      "filename": "Tool 2.0 - Return-to-Activity-Sport-School-Protocols.txt",
+      "uploadedBy": "adopted"
+    },
+    {
+      "sourceUrl": "https://pedsconcussion.com/manage-acute-and-prolonged-concussion-symptoms-algorithm/",
+      "title": "Manage Acute and Prolonged Symptoms Algorithm",
+      "storeId": "vs_fixture",
+      "fileId": "file_fixture_003",
+      "filename": "Tool 1.3 - Manage-Acute-and-Prolonged-Concussion-Symptoms-Algorithm.txt",
+      "uploadedBy": "adopted"
+    },
+    {
+      "sourceUrl": "https://pedsconcussion.com/pecarn-head/",
+      "title": "PECARN Management Algorithm for Children after Head Trauma",
+      "storeId": "vs_fixture",
+      "fileId": "file_fixture_004",
+      "filename": "Tool 2.2 - PECARN-Management-Algorithm.txt",
+      "uploadedBy": "adopted"
+    },
+    {
+      "sourceUrl": "https://pedsconcussion.com/the-role-of-school-boards-community-sports-organizations-and-centres/",
+      "title": "Pediatric Concussion: The Role of School Boards, Community Sports Organizations, and Centres",
+      "storeId": "vs_fixture",
+      "fileId": "file_fixture_005",
+      "filename": "Tool 1.1 - Pediatric-Concussion-The-Role-of-School-Boards-Community-Sports-Organizations-and-Centres-09.2019.txt",
+      "uploadedBy": "adopted"
+    },
+    {
+      "sourceUrl": "https://pedsconcussion.com/concussion-recognition-tool-5-to-help-identify-concussion-in-children-adolescents-and-adults/",
+      "title": "Physical Examination",
+      "storeId": "vs_fixture",
+      "fileId": "file_fixture_006",
+      "filename": "Tool 2.1 - Physical-Examination.txt",
+      "uploadedBy": "adopted"
+    },
+    {
+      "sourceUrl": "https://pedsconcussion.com/template-for-concussion-teams-letter-to-the-child-adolescents-school/",
+      "title": "Template: Letter of Accommodation from the Concussion Care Team to the School",
+      "storeId": "vs_fixture",
+      "fileId": "file_fixture_007",
+      "filename": "Tool 12.2 - Template-for-Concussion-Team_Letter-to-the-Child_Adolescent_School.txt",
+      "uploadedBy": "adopted"
+    },
+    {
+      "sourceUrl": "https://pedsconcussion.com/vce-manual/",
+      "title": "Virtual Care Exam Training Resource",
+      "storeId": "vs_fixture",
+      "fileId": "file_fixture_008",
+      "filename": "Tool 15.3 - VirtualConcussionExamManual.txt",
+      "uploadedBy": "adopted"
+    },
+    {
+      "sourceUrl": "https://pedsconcussion.com/tool-2-4-algorithym-for-the-management-of-the-pediatric-patient-2-years-with-minor-head-trauma",
+      "title": "Algorithm for the Management of the Pediatric Patient ≥ 2 years with Minor Head Trauma",
+      "storeId": "vs_fixture",
+      "fileId": "file_fixture_009",
+      "filename": "Tool 2.4 - Algorithm-for-Management-of-Pediatric-Patient.txt",
+      "uploadedBy": "adopted"
+    },
+    {
+      "sourceUrl": "https://pedsconcussion.com/tool-6-3-approved-medications-for-pediatric-indications/",
+      "title": "Approved Medications for Pediatric Indications",
+      "storeId": "vs_fixture",
+      "fileId": "file_fixture_010",
+      "filename": "Tool 6.3 - Approved-Medications-for-Pediatric-Indications.txt",
+      "uploadedBy": "adopted"
+    },
+    {
+      "sourceUrl": "https://pedsconcussion.com/tool-2-3-the-canadian-assessment-of-tomography-for-childhood-head-injury-2-catch2-rule/",
+      "title": "CATCH2 Rule",
+      "storeId": "vs_fixture",
+      "fileId": "file_fixture_011",
+      "filename": "Tool 2.3 - The-Canadian-Assessment-of-Tomography.txt",
+      "uploadedBy": "adopted"
+    },
+    {
+      "sourceUrl": "https://pedsconcussion.com/tool-12-1-concussion-implications-and-interventions-for-the-classroom/",
+      "title": "Concussion Implications and Interventions for the Classroom",
+      "storeId": "vs_fixture",
+      "fileId": "file_fixture_012",
+      "filename": "Tool 12.1 - Academic-accomodations-1.pdf-1-1.txt",
+      "uploadedBy": "adopted"
+    },
+    {
+      "sourceUrl": "https://pedsconcussion.com/tool-15-2-considerations-for-a-virtual-physical-examination-for-medical-assessment-and-follow-up-of-concussion-patients/",
+      "title": "Considerations for a virtual physical examination for medical assessment and follow-up of concussion patients",
+      "storeId": "vs_fixture",
+      "fileId": "file_fixture_013",
+      "filename": "Tool 15.2 - Considerations-for-a-virtual-physical-examination.txt",
+      "uploadedBy": "adopted"
+    },
+    {
+      "sourceUrl": "https://pedsconcussion.com/tool-15-1-considerations-for-telemedicine-and-virtual-care-algorithm/",
+      "title": "Considerations for Telemedicine and Virtual Care Algorithm",
+      "storeId": "vs_fixture",
+      "fileId": "file_fixture_014",
+      "filename": "Tool 15.1 - Virtual-Care-Algorithm.txt",
+      "uploadedBy": "adopted"
+    },
+    {
+      "sourceUrl": "https://pedsconcussion.com/tool-7-2-factors-that-may-influence-the-child-adolescents-sleep-wake-cycle/",
+      "title": "Factors That May Influence the Child/Adolescent’s Sleep/Wake Cycle",
+      "storeId": "vs_fixture",
+      "fileId": "file_fixture_015",
+      "filename": "Tool 7.2 - Factors-that-may-Influence-the-ChildAdolescents-SleepWake-Cycle.txt",
+      "uploadedBy": "adopted"
+    },
+    {
+      "sourceUrl": "https://pedsconcussion.com/tool-6-2-general-considerations-regarding-pharmacotherapy-2/",
+      "title": "General Considerations Regarding Pharmacotherapy",
+      "storeId": "vs_fixture",
+      "fileId": "file_fixture_016",
+      "filename": "Tool 6.2 - General-Considerations-Regarding-Pharmacotherapy.txt",
+      "uploadedBy": "adopted"
+    },
+    {
+      "sourceUrl": "https://pedsconcussion.com/tool-8-2-2/",
+      "title": "Management of Prolonged Mental Health Disorders Algorithm",
+      "storeId": "vs_fixture",
+      "fileId": "file_fixture_017",
+      "filename": "Tool 8.2 - Management-of-Prolonged-Mental-Health-Disorders-Algorithm.txt",
+      "uploadedBy": "adopted"
+    },
+    {
+      "sourceUrl": "https://pedsconcussion.com/tool-7-1-prolonged-post-concussion-sleep-disturbances-algorithm/",
+      "title": "Managing Post-Concussion Sleep Disturbances Algorithm",
+      "storeId": "vs_fixture",
+      "fileId": "file_fixture_018",
+      "filename": "Tool 7.1 - Prolonged-Post-concussion-Sleep-Disturbances-Algorithm.txt",
+      "uploadedBy": "adopted"
+    },
+    {
+      "sourceUrl": "https://pedsconcussion.com/tool-6-1-post-concussion-headache-algorithm-3/",
+      "title": "Post-Concussion headache algorithm",
+      "storeId": "vs_fixture",
+      "fileId": "file_fixture_019",
+      "filename": "Tool 6.1 - Post-Concussion-Headache-Algorithm.txt",
+      "uploadedBy": "adopted"
+    },
+    {
+      "sourceUrl": "https://pedsconcussion.com/tool-2-6-post-concussion-information-sheet-2/",
+      "title": "Post-Concussion Information Sheet",
+      "storeId": "vs_fixture",
+      "fileId": "file_fixture_020",
+      "filename": "Tool 2.6 - Post-Concussion-Information-Sheet-.txt",
+      "uploadedBy": "adopted"
+    },
+    {
+      "sourceUrl": "https://pedsconcussion.com/tool-8-1-post-concussion-mental-health-considerations-algorithm-3/",
+      "title": "Post-Concussion Mental Health Considerations Algorithm",
+      "storeId": "vs_fixture",
+      "fileId": "file_fixture_021",
+      "filename": "Tool 8.1 - Post-concussion-Mental-Health-Considerations-Algorithm.txt",
+      "uploadedBy": "adopted"
+    },
+    {
+      "sourceUrl": "https://pedsconcussion.com/tool-10-1post-concussion-vision-vestibular-and-oculomotor-disturbances-algorithm/",
+      "title": "Post-Concussion Vestibular (balance/dizziness) and Vision Disturbances Algorithm",
+      "storeId": "vs_fixture",
+      "fileId": "file_fixture_022",
+      "filename": "Tool 10.1 - Post-concussion-Vision-Vestibular-and-Oculomotor-Disturbances-Algorithm.txt",
+      "uploadedBy": "adopted"
+    },
+    {
+      "sourceUrl": "https://pedsconcussion.com/wp-content/uploads/Tool-12.4-Sample-Letter_Email-from-School-to-Parents.pdf",
+      "title": "Sample Letter/Email from School to Parents",
+      "storeId": "vs_fixture",
+      "fileId": "file_fixture_023",
+      "filename": "Tool 12.4 - Sample-Letter_Email-from-School-to-Parents.txt",
+      "uploadedBy": "adopted"
+    },
+    {
+      "sourceUrl": "https://pedsconcussion.com/tool-2-7-strategies-to-promote-good-sleep-and-alertness-2/",
+      "title": "Strategies to Promote Good Sleep and Alertness",
+      "storeId": "vs_fixture",
+      "fileId": "file_fixture_024",
+      "filename": "Tool 2.7 - Strategies-to-Promote-Good-Sleep-and-Alertness.txt",
+      "uploadedBy": "adopted"
+    },
+    {
+      "sourceUrl": "https://pedsconcussion.com/wp-content/uploads/Tool-12.3-Template-for-Physician_Letter-to-the-Child_-Adolescent_School.pdf",
+      "title": "Template Letter of Accommodation from Physician to School",
+      "storeId": "vs_fixture",
+      "fileId": "file_fixture_025",
+      "filename": "Tool 12.3 - Template-for-Physician_Letter-to-the-Child_-Adolescent_School.txt",
+      "uploadedBy": "adopted"
+    },
+    {
+      "sourceUrl": "https://pedsconcussion.com/tool-2-5-four-ps-prioritize-plan-pace-and-position/",
+      "title": "Tool 2.5: “Four P’s” – Prioritize, Plan, Pace, and Position",
+      "storeId": "vs_fixture",
+      "fileId": "file_fixture_026",
+      "filename": "Tool 2.5 - Four-Ps-Prioritize-Plan-Pace-and-Position-draft.txt",
+      "uploadedBy": "adopted"
+    }
+  ],
+  "resourcePairs": [
+    {
+      "enUrl": "https://pedsconcussion.com/manage-acute-and-prolonged-concussion-symptoms-algorithm/",
+      "frUrl": "https://pedsconcussion.com/wp-content/uploads/Outil-1.3-Algorithme-de-gestion-des-symptomes-de-commotion-cerebrale-aigue-et-prolongee-1.pdf",
+      "frTitle": "Algorithme de gestion des symptômes de commotion cérébrale aiguë et prolongée",
+      "origin": "manual",
+      "source": "migrated-from-resource_overrides",
+      "note": "Tool 1.3 on both sides. The EN page heading reads 'Tool 1.3: Manage Acute and Prolonged Concussion Symptoms Algorithm'; the FR file is named Outil-1.3. The auto-matcher missed it because the EN slug carries no number."
+    },
+    {
+      "enUrl": "https://pedsconcussion.com/recognition/",
+      "frUrl": "https://pedsconcussion.com/reconnaissance/",
+      "frTitle": "Outil de reconnaissance des commotions cérébrales",
+      "origin": "manual",
+      "source": "migrated-from-resource_overrides",
+      "note": "Both are the Concussion Recognition Tool 6. EN page H1 'Concussion Recognition Tool 6'; the FR listing anchor reads 'CRT6; Outil de reconnaissance…' and the FR page cites CRT6 (BJSM 2023;57:692-694) and serves CRT6-French.pdf."
+    },
+    {
+      "enUrl": "https://pedsconcussion.com/return-to-activity-sport-school/",
+      "frUrl": "https://pedsconcussion.com/retour-aux-activites-sport-lecole/",
+      "frTitle": "Étapes de retour aux activités/au sport et à l’école",
+      "origin": "manual",
+      "source": "migrated-from-resource_overrides",
+      "note": "Mirrored slug (return-to-activity-sport-school / retour-aux-activites-sport-lecole) and the same document: the guideline's Return to Sport/Activity/Learn/School steps, CHEO-RI. Not to be confused with the third-party CATT 'Retour à l'école' / 'Retour au sport' sheets."
+    },
+    {
+      "enUrl": "https://pedsconcussion.com/tool-10-1post-concussion-vision-vestibular-and-oculomotor-disturbances-algorithm/",
+      "frUrl": "https://pedsconcussion.com/outil-10-1-algorithme-de-gestion-des-troubles-de-la-vision-des-troubles-vestibulaires-et-des-troubles-oculomoteurs/",
+      "frTitle": "Algorithme de gestion des troubles de la vision, des troubles vestibulaires et des troubles oculomoteurs après une commotion cérébrale",
+      "origin": "auto",
+      "source": "tool-number",
+      "note": "Tool number 10.1 on both sides."
+    },
+    {
+      "enUrl": "https://pedsconcussion.com/tool-12-1-concussion-implications-and-interventions-for-the-classroom/",
+      "frUrl": "https://pedsconcussion.com/outil-12-1-repercussions-des-commotions-cerebrales-et-interventions-pour-la-salle-de-classe/",
+      "frTitle": "Répercussions des commotions cérébrales et interventions pour la salle de classe",
+      "origin": "auto",
+      "source": "tool-number",
+      "note": "Tool number 12.1 on both sides."
+    },
+    {
+      "enUrl": "https://pedsconcussion.com/tool-15-1-considerations-for-telemedicine-and-virtual-care-algorithm/",
+      "frUrl": "https://pedsconcussion.com/telemedecine-et-soins-virtuel/",
+      "frTitle": "Considérations pour la télémédecine et l’algorithme de soins virtuel",
+      "origin": "manual",
+      "source": "migrated-from-resource_overrides",
+      "note": "Tool 15.1 on both sides — the FR page title is literally 'Outil 15.1 Considérations pour la télémédecine et l'algorithme de soins virtuel'. Both serve a 1-page algorithm PDF. The FR slug carries no number, which is why the auto-matcher missed it."
+    },
+    {
+      "enUrl": "https://pedsconcussion.com/tool-2-6-post-concussion-information-sheet-2/",
+      "frUrl": "https://pedsconcussion.com/fiche-dinformation-post-commotion/",
+      "frTitle": "Fiche D’Information Post-Commotion Cérébrale",
+      "origin": "manual",
+      "source": "migrated-from-resource_overrides",
+      "note": "Tool 2.6. EN: 'Post-concussion Patient Information Sheet for Healthcare Professionals Handout by CHEO-RI'. FR: 'fiche d'information pour les patients post-commotion cérébrale à l'intention des professionnels de la santé … par CHEO-RI'. Same author, audience, document."
+    },
+    {
+      "enUrl": "https://pedsconcussion.com/tool-6-1-post-concussion-headache-algorithm-3/",
+      "frUrl": "https://pedsconcussion.com/outil-6-1-algorithme-de-gestion-des-maux-de-tete-post-commotions-cerebrales/",
+      "frTitle": "Algorithme de gestion des maux de tête post-commotions cérébrales",
+      "origin": "auto",
+      "source": "tool-number",
+      "note": "Tool number 6.1 on both sides."
+    },
+    {
+      "enUrl": "https://pedsconcussion.com/tool-7-1-prolonged-post-concussion-sleep-disturbances-algorithm/",
+      "frUrl": "https://pedsconcussion.com/outil-7-1-algorithme-de-gestion-pour-les-troubles-du-sommeil-postcommotion-prolonges/",
+      "frTitle": "Algorithme de gestion pour les troubles du sommeil post-commotion prolongés",
+      "origin": "auto",
+      "source": "tool-number",
+      "note": "Tool number 7.1 on both sides."
+    },
+    {
+      "enUrl": "https://pedsconcussion.com/tool-8-1-post-concussion-mental-health-considerations-algorithm-3/",
+      "frUrl": "https://pedsconcussion.com/outil-8-1-algorithme-des-considerations-sur-lasante-mentale-apres-une-commotion-cerebrale/",
+      "frTitle": "Algorithme des considérations sur la santé mentale après une commotion cérébrale",
+      "origin": "auto",
+      "source": "tool-number",
+      "note": "Tool number 8.1 on both sides."
+    },
+    {
+      "enUrl": "https://pedsconcussion.com/tool-8-2-2/",
+      "frUrl": "https://pedsconcussion.com/outil-8-2-algorithme-de-gestion-des-troubles-de-sante-mentale-prolonges/",
+      "frTitle": "Algorithme de gestion des troubles de santé mentale prolongés",
+      "origin": "auto",
+      "source": "tool-number",
+      "note": "Tool number 8.2 on both sides."
+    },
+    {
+      "enUrl": "https://pedsconcussion.com/vce-manual/",
+      "frUrl": "https://pedsconcussion.com/examen-virtuel-des-commotions-cerebrales-manuel-de-formation-telecharger/",
+      "frTitle": "Examen virtuel des commotions cérébrales: Manuel de Formation",
+      "origin": "manual",
+      "source": "migrated-from-resource_overrides",
+      "note": "Both are the 26-page Virtual Concussion Exam training manual (EN VirtualConcussionExamManual.pdf, 26pp; FR Examen-virtuel-…-manuel-de-formation-1.pdf, 26pp). CAUTION: the FR page's own heading says 'Outil 15.2', but EN Tool 15.2 is a different 5-page document ('Considerations for a virtual physical examination'). Pairing on that number would be wrong; this pair follows the document, not the site's label."
+    }
+  ]
+}

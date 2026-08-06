@@ -5,7 +5,6 @@ name: Content verify
 on:
   pull_request:
     paths:
-      - "data/**"
       - "lib/i18n/**"
       - "scripts/content_pipeline/**"
       - "all_rec_markdown.md"
@@ -32,8 +31,23 @@ jobs:
           pip install -r requirements.txt
           npm ci
 
+      # Does a source-side change still move the right sink, and do the abort gates still refuse
+      # a broken scrape? Runs against a recorded fixture, so it needs no network, no secrets and
+      # no live site -- unlike every other check here, this one is deterministic and can fail for
+      # exactly one reason: the pipeline's own behaviour changed.
+      - name: Simulate source changes
+        run: python -m scripts.content_pipeline.simulate
+
       # Structural gates, generated-file freshness, and liveness. Writes nothing.
+      #
+      # Needs read access to the pairing table: the gates check the links that are actually
+      # being served, not a file in the repo. Without these secrets the step fails with a clear
+      # message rather than passing vacuously over an empty set — a rot detector that reports
+      # "all clear" because it could read nothing is worse than no detector.
       - name: Run gates
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
         run: python -m scripts.content_pipeline.cli verify
 
       - name: Type-check

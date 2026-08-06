@@ -9,7 +9,7 @@
   "functions": {
     "api/index.py": {
       "maxDuration": 300,
-      "includeFiles": "{core/**,scripts/**,data/**,all_rec_markdown.md}"
+      "includeFiles": "{core/**,scripts/**,all_rec_markdown.md}"
     }
   },
   "crons": [
