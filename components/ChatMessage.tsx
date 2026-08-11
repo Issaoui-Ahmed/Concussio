@@ -14,9 +14,21 @@ function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs));
 }
 
+/**
+ * A guideline table is wider than a phone whatever we do to it, so it gets its own scroller
+ * rather than widening the whole message column.
+ */
+function ScrollableTable({ children, ...rest }: React.ComponentPropsWithoutRef<"table">) {
+    return (
+        <div className="overflow-x-auto">
+            <table {...rest}>{children}</table>
+        </div>
+    );
+}
+
 // Defined at module scope: a fresh object here would remount every link on each render.
 // `a` points French answers at French resources — see lib/i18n/resourceLinks.ts.
-const MARKDOWN_COMPONENTS = { a: ResourceLink };
+const MARKDOWN_COMPONENTS = { a: ResourceLink, table: ScrollableTable };
 
 const FUELIX_CITATION_HEADING_RE =
     /^\s*(?:#{1,6}\s*)?(?:[*_]{1,3})?\s*copilot\s+knowledge\s+base\s+citations\s*(?:[*_]{1,3})?\s*:?\s*$/i;
@@ -119,7 +131,7 @@ export function ChatMessage({
                 isUser ? "" : ""
             )}
         >
-            <div className="flex gap-4">
+            <div className="flex gap-3 sm:gap-4">
                 <div
                     className={cn(
                         "w-8 h-8 rounded-sm flex items-center justify-center shrink-0 overflow-hidden relative",
@@ -138,7 +150,11 @@ export function ChatMessage({
                     )}
                 </div>
 
-                <div className="prose prose-slate max-w-none flex-1 leading-7 text-gray-800">
+                {/* min-w-0 is what actually keeps this on a phone: without it the flex item
+                    refuses to shrink below the width of its widest line, so one long URL in
+                    an answer widens the whole page. `break-words` handles the same case for
+                    words with nowhere to wrap. */}
+                <div className="prose prose-sm sm:prose-base prose-slate max-w-none flex-1 min-w-0 break-words leading-7 text-gray-800">
                     {/* Added name label */}
                     <div className="font-semibold text-sm mb-1 text-gray-900">
                         {isUser ? t("message.you") : t("message.assistant")}
@@ -172,7 +188,7 @@ export function ChatMessage({
                                             type="button"
                                             onClick={() => onFollowUpClick?.(question)}
                                             disabled={followUpsDisabled}
-                                            className="group w-full rounded-xl border border-transparent px-3 py-2 text-left transition-all duration-200 hover:border-[#00417d]/20 hover:bg-[#00417d]/5 hover:translate-x-0.5 disabled:cursor-not-allowed disabled:opacity-60"
+                                            className="group w-full rounded-xl border border-transparent px-3 py-2.5 text-left text-sm sm:text-base transition-all duration-200 hover:border-[#00417d]/20 hover:bg-[#00417d]/5 hover:translate-x-0.5 disabled:cursor-not-allowed disabled:opacity-60"
                                         >
                                             <span className="mr-2 inline-block text-gray-500 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:text-[#00417d]">
                                                 -&gt;

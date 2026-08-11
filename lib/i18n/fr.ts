@@ -18,6 +18,8 @@ export const fr: Record<TranslationKey, string> = {
     "sidebar.yourConversations": "Vos conversations",
     "sidebar.noConversations": "Aucune conversation pour l'instant.",
     "sidebar.deleteChat": "Supprimer la conversation",
+    "sidebar.open": "Ouvrir les conversations",
+    "sidebar.close": "Fermer les conversations",
 
     "chat.welcomeTitle": "ConcussCare",
     "chat.welcomeTagline":
@@ -41,6 +43,28 @@ export const fr: Record<TranslationKey, string> = {
     "followUps.default.1": "Pouvez-vous expliquer cela plus simplement ?",
     "followUps.default.2": "Que dois-je faire en premier ?",
     "followUps.default.3": "Quels signes d'alerte doivent m'amener à consulter d'urgence ?",
+
+    "gate.title": "Mot de passe requis",
+    "gate.intro":
+        "Ce prototype du robot conversationnel sur les commotions cérébrales pédiatriques est offert à l'essai sur invitation seulement. Saisissez le mot de passe qui vous a été remis pour continuer.",
+    "gate.passwordLabel": "Mot de passe",
+    "gate.submit": "Continuer",
+    "gate.checking": "Vérification…",
+    "gate.incorrect": "Mot de passe incorrect. Veuillez réessayer.",
+    "gate.unconfigured":
+        "Aucun mot de passe n'est configuré sur le serveur ; le robot conversationnel ne peut donc pas être déverrouillé. Définissez DEMO_PASSWORD dans l'environnement de déploiement, puis redéployez.",
+
+    "demo.title": "Version de démonstration et d'essai",
+    "demo.p1":
+        "Vous êtes sur le point d'utiliser un prototype du robot conversationnel sur les commotions cérébrales pédiatriques, à des fins d'essai et d'évaluation.",
+    "demo.p2": "Veuillez garder ce lien et ce mot de passe confidentiels.",
+    "demo.p3":
+        "Veuillez ne saisir aucun renseignement personnel ou permettant d'identifier une personne, y compris de vrais noms, adresses, écoles, équipes ou professionnels de la santé, ni toute autre information susceptible de vous identifier ou d'identifier une autre personne. Utilisez des exemples fictifs au besoin.",
+    "demo.p4":
+        "Le robot conversationnel est en cours d'évaluation et ses réponses peuvent être incomplètes ou erronées. Il est destiné à l'essai seulement et ne remplace pas les soins médicaux, un diagnostic ou l'avis d'un professionnel de la santé.",
+    "demo.p5":
+        "En continuant, vous reconnaissez accéder à une version de démonstration et d'essai du robot conversationnel.",
+    "demo.continue": "Continuer vers l'avis de non-responsabilité",
 
     "disclaimer.title": "Avis de non-responsabilité",
     "disclaimer.p1":

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -17,6 +17,15 @@ export const metadata: Metadata = {
   description: "Concussion healthcare assistant",
 };
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  // Shrinks the layout viewport when the on-screen keyboard opens, so h-dvh follows it and
+  // the composer stays above the keyboard instead of behind it. Honoured by Chrome; iOS
+  // Safari ignores it and scrolls the focused field into view instead.
+  interactiveWidget: "resizes-content",
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -28,7 +37,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-white text-gray-800 flex flex-col h-screen`}
+        // h-dvh, not h-screen: on mobile browsers 100vh is the viewport *without* the
+        // collapsing address bar, so a screen-height column runs under the browser chrome and
+        // the composer at its bottom edge is unreachable. dvh tracks the visible height.
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-white text-gray-800 flex flex-col h-dvh`}
       >
         {children}
       </body>

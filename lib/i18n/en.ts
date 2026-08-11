@@ -19,6 +19,9 @@ export const en = {
     "sidebar.yourConversations": "Your conversations",
     "sidebar.noConversations": "No conversations yet.",
     "sidebar.deleteChat": "Delete conversation",
+    // Labels for the drawer that replaces the sidebar below md.
+    "sidebar.open": "Open conversations",
+    "sidebar.close": "Close conversations",
 
     "chat.welcomeTitle": "ConcussCare",
     "chat.welcomeTagline":
@@ -42,6 +45,30 @@ export const en = {
     "followUps.default.1": "Can you explain that in simpler terms?",
     "followUps.default.2": "What should I do first?",
     "followUps.default.3": "What warning signs mean I should seek urgent care?",
+
+    // The three screens a visitor passes through, in order: password gate, demo notice,
+    // disclaimer.
+    "gate.title": "Password Required",
+    "gate.intro":
+        "This prototype of the Pediatric Concussion Chatbot is open for testing by invitation only. Enter the password you were given to continue.",
+    "gate.passwordLabel": "Password",
+    "gate.submit": "Continue",
+    "gate.checking": "Checking…",
+    "gate.incorrect": "Incorrect password. Please try again.",
+    "gate.unconfigured":
+        "No password is configured on the server, so the chatbot cannot be unlocked. Set DEMO_PASSWORD in the deployment environment and redeploy.",
+
+    "demo.title": "Demo/Testing Version",
+    "demo.p1":
+        "You are about to use a prototype of the Pediatric Concussion Chatbot for testing and evaluation purposes.",
+    "demo.p2": "Please keep this link and the password confidential.",
+    "demo.p3":
+        "Please do not enter any personal or identifying information, including real names, addresses, schools, teams, healthcare providers, or other information that could identify you or another person. Please use fictional examples if needed.",
+    "demo.p4":
+        "The chatbot is being evaluated and its responses may be incomplete or incorrect. It is intended for testing only and is not a substitute for medical care, diagnosis, or advice from a healthcare professional.",
+    "demo.p5":
+        "By continuing, you acknowledge that you are entering a demo/testing version of the chatbot.",
+    "demo.continue": "Continue to Disclaimer",
 
     "disclaimer.title": "Disclaimer",
     "disclaimer.p1":
