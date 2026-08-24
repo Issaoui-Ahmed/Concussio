@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { unlockAdmin } from "@/lib/adminAccessAction";
 import { unlockDemo } from "@/lib/demoAccessAction";
 import { useLocale, useT } from "@/lib/i18n/LanguageProvider";
 import { cn } from "@/lib/utils";
@@ -10,11 +11,18 @@ import { LanguageToggle } from "./LanguageToggle";
 
 interface PasswordGateProps {
     /**
-     * False when the deployment has no DEMO_PASSWORD. The form is pointless then -- no typed
-     * password can match -- so the screen explains the misconfiguration instead of letting
-     * someone guess at a lock with no key.
+     * False when the deployment has no password set for this scope. The form is pointless then
+     * -- no typed password can match -- so the screen explains the misconfiguration instead of
+     * letting someone guess at a lock with no key.
      */
     configured: boolean;
+    /**
+     * Which lock this form opens: the DEMO_PASSWORD in front of the whole prototype, or the
+     * ADMIN_PASSWORD that /admin asks for after it. Only the copy and the action behind the
+     * button differ -- deliberately the same screen twice, since on /admin the second one
+     * appears immediately after the first.
+     */
+    scope?: "demo" | "admin";
     /**
      * Admin mounts no LanguageProvider, so its toggle would be inert. Off there, on for the
      * public app, where choosing a language here carries through to every screen after it.
@@ -22,7 +30,13 @@ interface PasswordGateProps {
     showLanguageToggle?: boolean;
 }
 
-export function PasswordGate({ configured, showLanguageToggle = true }: PasswordGateProps) {
+export function PasswordGate({
+    configured,
+    showLanguageToggle = true,
+    scope = "demo",
+}: PasswordGateProps) {
+    const admin = scope === "admin";
+    const fieldId = admin ? "admin-password" : "demo-password";
     const t = useT();
     const { locale } = useLocale();
     const router = useRouter();
@@ -33,7 +47,7 @@ export function PasswordGate({ configured, showLanguageToggle = true }: Password
     const submit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         startTransition(async () => {
-            const result = await unlockDemo(password);
+            const result = admin ? await unlockAdmin(password) : await unlockDemo(password);
             if (result !== "ok") {
                 setFailed(true);
                 setPassword("");
@@ -64,25 +78,25 @@ export function PasswordGate({ configured, showLanguageToggle = true }: Password
                 </div>
 
                 <h1 className="mt-6 short:mt-3 text-xl short:text-lg font-bold text-gray-900 text-center">
-                    {t("gate.title")}
+                    {t(admin ? "adminGate.title" : "gate.title")}
                 </h1>
 
                 {configured ? (
                     <>
                         <p className="mt-3 short:mt-2 text-sm text-gray-600 leading-relaxed text-center">
-                            {t("gate.intro")}
+                            {t(admin ? "adminGate.intro" : "gate.intro")}
                         </p>
 
                         <form onSubmit={submit} className="mt-6 short:mt-3 space-y-4 short:space-y-2">
                             <div>
                                 <label
-                                    htmlFor="demo-password"
+                                    htmlFor={fieldId}
                                     className="block text-sm font-medium text-gray-700"
                                 >
-                                    {t("gate.passwordLabel")}
+                                    {t(admin ? "adminGate.passwordLabel" : "gate.passwordLabel")}
                                 </label>
                                 <input
-                                    id="demo-password"
+                                    id={fieldId}
                                     type="password"
                                     value={password}
                                     onChange={event => {
@@ -93,7 +107,7 @@ export function PasswordGate({ configured, showLanguageToggle = true }: Password
                                     autoFocus
                                     required
                                     aria-invalid={failed}
-                                    aria-describedby={failed ? "demo-password-error" : undefined}
+                                    aria-describedby={failed ? `${fieldId}-error` : undefined}
                                     // text-base: iOS Safari zooms the page in on focus for any
                                     // field under 16px, and this one is autofocused.
                                     className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2.5 text-base sm:text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -102,7 +116,7 @@ export function PasswordGate({ configured, showLanguageToggle = true }: Password
 
                             {failed && (
                                 <p
-                                    id="demo-password-error"
+                                    id={`${fieldId}-error`}
                                     role="alert"
                                     className="text-sm text-red-600"
                                 >
@@ -121,7 +135,7 @@ export function PasswordGate({ configured, showLanguageToggle = true }: Password
                     </>
                 ) : (
                     <p role="alert" className="mt-3 text-sm text-red-600 leading-relaxed">
-                        {t("gate.unconfigured")}
+                        {t(admin ? "adminGate.unconfigured" : "gate.unconfigured")}
                     </p>
                 )}
 

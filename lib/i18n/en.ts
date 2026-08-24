@@ -58,6 +58,15 @@ export const en = {
     "gate.unconfigured":
         "No password is configured on the server, so the chatbot cannot be unlocked. Set DEMO_PASSWORD in the deployment environment and redeploy.",
 
+    // The second gate, /admin only. Kept in the dictionaries like everything else even though
+    // admin mounts no LanguageProvider and therefore always renders the English side.
+    "adminGate.title": "Admin Password Required",
+    "adminGate.intro":
+        "The admin tools rerun the content pipeline and edit the Fuel IX resources behind the chatbot. They ask for their own password, separate from the one that opened the prototype.",
+    "adminGate.passwordLabel": "Admin password",
+    "adminGate.unconfigured":
+        "No admin password is configured on the server, so the admin tools cannot be unlocked. Set ADMIN_PASSWORD in the deployment environment and redeploy.",
+
     "demo.title": "Demo/Testing Version",
     "demo.p1":
         "You are about to use a prototype of the Pediatric Concussion Chatbot for testing and evaluation purposes.",

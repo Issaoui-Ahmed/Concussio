@@ -54,6 +54,13 @@ export const fr: Record<TranslationKey, string> = {
     "gate.unconfigured":
         "Aucun mot de passe n'est configuré sur le serveur ; le robot conversationnel ne peut donc pas être déverrouillé. Définissez DEMO_PASSWORD dans l'environnement de déploiement, puis redéployez.",
 
+    "adminGate.title": "Mot de passe d'administration requis",
+    "adminGate.intro":
+        "Les outils d'administration relancent le pipeline de contenu et modifient les ressources Fuel IX du robot conversationnel. Ils exigent leur propre mot de passe, distinct de celui qui a donné accès au prototype.",
+    "adminGate.passwordLabel": "Mot de passe d'administration",
+    "adminGate.unconfigured":
+        "Aucun mot de passe d'administration n'est configuré sur le serveur ; les outils d'administration ne peuvent donc pas être déverrouillés. Définissez ADMIN_PASSWORD dans l'environnement de déploiement, puis redéployez.",
+
     "demo.title": "Version de démonstration et d'essai",
     "demo.p1":
         "Vous êtes sur le point d'utiliser un prototype du robot conversationnel sur les commotions cérébrales pédiatriques, à des fins d'essai et d'évaluation.",
