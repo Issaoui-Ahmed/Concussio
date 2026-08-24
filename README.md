@@ -84,11 +84,48 @@ This project is optimized for deployment on **Vercel**.
     * `FUELIX_API_KEY` (required for the root chat and the Fuel IX admin pages)
     * `FUELIX_API_BASE_URL` (optional, default is `https://api.fuelix.ai/v1`)
     * `FUELIX_PRODUCT_ID` (optional, default is `core`)
+    * `DEMO_PASSWORD` (required — see below; without it the deployment stays locked)
+    * `ADMIN_PASSWORD` (required — see below; without it `/admin` stays locked)
 5.  Deploy!
 
 Notes:
 * `api/main.py` is the unified FastAPI app used locally and by Vercel.
 * `api/index.py` imports that unified app so Vercel can route `/api/*` requests to FastAPI while preserving the full request path.
+
+## 🔒 Demo access
+
+While the prototype is out for evaluation, every visitor passes three screens before the chat:
+
+**Password → Demo/testing notice → Disclaimer → Chatbot**
+
+*   **Password** — set `DEMO_PASSWORD` in `.env` locally and in the Vercel project env. The
+    check runs on the server (`lib/demoAccess.ts`), so a locked visitor is never sent the app's
+    markup, and the same cookie is required by `/api/chat`, `/api/followups` and
+    `/api/translate` (`api/demo_access.py`), so the endpoints cannot be driven around the UI.
+    It is a session cookie: closing the browser re-asks.
+*   **Demo/testing notice and disclaimer** — acknowledged once per browser session, in that
+    order (`lib/entryFlow.ts`).
+
+With `DEMO_PASSWORD` unset the app fails closed: the gate renders with an explanation and the
+API answers 503. To take the prototype public later, drop the `isDemoUnlocked()` check from the
+two layouts and the `GATED_PATHS` entries from `api/demo_access.py`.
+
+`/admin` sits behind that password **and** a second one:
+
+**Demo password → Admin password → Admin tools**
+
+*   **Admin password** — set `ADMIN_PASSWORD` in `.env` and in the Vercel project env. Every
+    invited tester holds the demo password, while the admin pages rerun the content pipeline,
+    rewrite the resource pairings and delete Fuel IX vector stores, so the tooling has a secret
+    of its own (`lib/adminAccess.ts`, cookie `concussio_admin_access`). It stacks on the demo
+    gate rather than replacing it, and fails closed the same way. Unlike the demo password,
+    nothing outside Next.js recomputes it.
+
+    It is a **page gate only**. `/api/admin/*`, `/api/fuelix/*`, `/api/scraping` and the writing
+    half of `/api/resource-links` are still reachable by anyone holding the demo cookie — as
+    they were before this password existed (see `GATED_PATHS` in `api/demo_access.py`). Gating
+    them too means teaching the Python middleware about the admin cookie and splitting
+    `/api/resource-links`, whose `GET` the public app depends on.
 
 ## 📜 License
 

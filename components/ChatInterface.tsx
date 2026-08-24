@@ -5,7 +5,7 @@ import React, { useState, useRef, useEffect, useMemo, useCallback } from "react"
 import Image from "next/image";
 import { ChatMessage } from "./ChatMessage";
 import { Sidebar, Session } from "./Sidebar";
-import { Send } from "lucide-react";
+import { Menu, Send } from "lucide-react";
 import { useLocale, useT, type Locale } from "@/lib/i18n/LanguageProvider";
 import { detectLanguage } from "@/lib/i18n/detect";
 
@@ -87,7 +87,10 @@ export function ChatInterface() {
     const [isLoading, setIsLoading] = useState(false);
     const [elapsedTime, setElapsedTime] = useState(0);
     const [userType, setUserType] = useState<UserType>("Healthcare Professional");
+    // Drawer state for the sidebar below md; above it the sidebar ignores this.
+    const [sidebarOpen, setSidebarOpen] = useState(false);
     const bottomRef = useRef<HTMLDivElement>(null);
+    const inputRef = useRef<HTMLInputElement>(null);
 
     // Latest values for async work that must not read a stale closure.
     const sessionsRef = useRef<Session[]>(sessions);
@@ -145,6 +148,14 @@ export function ChatInterface() {
     useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages]);
+
+    // Desktop only. Autofocusing on a phone raises the on-screen keyboard over the entry
+    // modals, hiding half of a disclaimer the visitor has not read yet.
+    useEffect(() => {
+        if (window.matchMedia("(min-width: 768px)").matches) {
+            inputRef.current?.focus();
+        }
+    }, []);
 
     const createNewSession = () => {
         const newSession: Session = {
@@ -448,6 +459,14 @@ export function ChatInterface() {
                 }),
             });
 
+            // The demo password gate is a session cookie, so it can end while this tab is still
+            // open. Reloading puts the gate back on screen instead of leaving a chat window
+            // where every message fails for a reason the reader cannot see.
+            if (response.status === 401) {
+                window.location.reload();
+                return;
+            }
+
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
                 throw new Error(errorData.detail || "Failed to fetch response");
@@ -510,7 +529,8 @@ export function ChatInterface() {
     };
 
     return (
-        <div className="flex h-full bg-[#F7F7F9] text-gray-800 font-sans overflow-hidden">
+        // `relative` anchors the sidebar drawer, which is absolutely positioned below md.
+        <div className="relative flex h-full bg-[#F7F7F9] text-gray-800 font-sans overflow-hidden">
             {/* Sidebar */}
             <Sidebar
                 sessions={sessions}
@@ -518,18 +538,45 @@ export function ChatInterface() {
                 onNewChat={() => setCurrentSessionId(null)}
                 onSelectSession={handleSelectSession}
                 onDeleteSession={handleDeleteSession}
+                open={sidebarOpen}
+                onClose={() => setSidebarOpen(false)}
             />
 
-            {/* Main Content */}
-            <div className="flex-1 flex flex-col h-full relative">
+            {/* Main Content. min-w-0 lets this column shrink inside the flex row instead of
+                being held open by a wide message and pushing itself off a narrow screen. */}
+            <div className="flex-1 min-w-0 flex flex-col h-full">
+
+                {/* The drawer has no trigger of its own, so the chat column carries one —
+                    along with the open conversation's title, which the sidebar would
+                    otherwise be the only place to see. */}
+                <div className="md:hidden flex items-center gap-2 border-b border-gray-100 bg-white px-2 py-1.5 short:py-0 shrink-0">
+                    <button
+                        type="button"
+                        onClick={() => setSidebarOpen(true)}
+                        aria-label={t("sidebar.open")}
+                        aria-expanded={sidebarOpen}
+                        className="shrink-0 rounded-lg p-2.5 short:p-2 text-gray-600 hover:bg-gray-100 transition-colors"
+                    >
+                        <Menu className="w-5 h-5" />
+                    </button>
+                    <span className="truncate text-sm font-medium text-gray-600">
+                        {currentSession?.title ?? t("sidebar.newChat")}
+                    </span>
+                </div>
 
                 {/* Chat Area */}
                 <div className="flex-1 overflow-y-auto w-full">
-                    <div className="flex flex-col min-h-full pb-36 pt-10">
+                    <div className="flex flex-col min-h-full pt-6 short:pt-3 md:pt-10">
                         {(!currentSessionId || messages.length === 0) ? (
-                            <div className="flex-1 flex flex-col items-center justify-center text-center px-4 -mt-20">
-                                <div className="bg-white p-4 rounded-xl shadow-sm mb-6 flex items-center justify-center">
-                                    <div className="relative w-12 h-12">
+                            // m-auto, not flex-1 + justify-center: centred content that grows
+                            // past its container overflows *unscrollably* under
+                            // justify-center, so on a small phone the tagline was simply cut
+                            // off. Auto margins centre it while leaving the overflow
+                            // reachable. The desktop nudge above centre is a transform so it
+                            // stays layout-neutral.
+                            <div className="m-auto flex flex-col items-center text-center px-4 py-4 short:py-1 md:-translate-y-10">
+                                <div className="bg-white p-2.5 short:p-2 md:p-4 rounded-xl shadow-sm mb-3 short:mb-2 md:mb-6 flex items-center justify-center">
+                                    <div className="relative w-9 h-9 short:w-8 short:h-8 md:w-12 md:h-12">
                                         <Image
                                             src="/logo-icon-v2.png"
                                             alt="Logo"
@@ -538,11 +585,11 @@ export function ChatInterface() {
                                         />
                                     </div>
                                 </div>
-                                <h1 className="text-3xl font-bold mb-2 text-gray-800">{t("chat.welcomeTitle")}</h1>
-                                <p className="text-gray-500 max-w-md">{t("chat.welcomeTagline")}</p>
+                                <h1 className="text-xl short:text-xl sm:text-2xl md:text-3xl font-bold mb-2 short:mb-1 text-gray-800">{t("chat.welcomeTitle")}</h1>
+                                <p className="text-sm short:text-xs md:text-base text-gray-500 max-w-md">{t("chat.welcomeTagline")}</p>
                             </div>
                         ) : (
-                            <div className="flex flex-col gap-6 w-full max-w-4xl mx-auto px-4">
+                            <div className="flex flex-col gap-5 md:gap-6 w-full max-w-4xl mx-auto px-3 md:px-4 pb-4">
                                 {messages.map((msg, idx) => (
                                     <ChatMessage
                                         key={msg.id ?? `${idx}-${msg.role}`}
@@ -579,18 +626,32 @@ export function ChatInterface() {
                     </div>
                 </div>
 
-                {/* Input Area */}
-                <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-[#F7F7F9] via-[#F7F7F9] to-transparent pt-10 pb-6 px-4">
-                    <div className="max-w-3xl mx-auto flex gap-4 items-end">
+                {/* Input Area. A sibling of the scroll area rather than an overlay on top of
+                    it: overlaying meant reserving its height as padding on the messages, and
+                    any fixed guess is wrong on a phone, where the row wraps to two lines. */}
+                <div className="relative shrink-0 bg-[#F7F7F9] px-3 md:px-4 pt-2 short:pt-1 pb-safe">
+                    {/* The fade the overlay used to provide, now that nothing scrolls under
+                        the composer. */}
+                    <div
+                        aria-hidden="true"
+                        className="pointer-events-none absolute inset-x-0 bottom-full h-8 bg-gradient-to-t from-[#F7F7F9] to-transparent"
+                    />
+
+                    {/* Stacked only where both controls cannot share a line: a portrait phone.
+                        By sm there is width for a row, and on a sideways phone the row is what
+                        keeps the conversation above the fold. */}
+                    <div className="max-w-3xl mx-auto flex flex-col gap-2 short:flex-row short:gap-3 short:items-end sm:flex-row sm:gap-3 sm:items-end md:gap-4">
                         {/* User Type Dropdown. The `value` stays an English key — it routes to the
                             Fuel IX assistant and the prompt personalization; only the label is
                             translated. */}
-                        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-1 flex shrink-0 mb-1">
+                        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-1 flex shrink-0 short:mb-1 sm:mb-1">
                             <select
                                 value={userType}
                                 onChange={(e) => setUserType(e.target.value as UserType)}
                                 disabled={messages.length > 0}
-                                className="px-3 py-2 rounded-lg text-sm font-medium bg-transparent border-none focus:ring-0 text-gray-700 cursor-pointer disabled:opacity-50"
+                                // text-base on touch widths: any control under 16px makes iOS
+                                // Safari zoom the page in on focus, and it never zooms back.
+                                className="w-full short:w-auto sm:w-auto px-3 py-2 short:py-1.5 rounded-lg text-base md:text-sm font-medium bg-transparent border-none focus:ring-0 text-gray-700 cursor-pointer disabled:opacity-50"
                             >
                                 {USER_TYPES.map(value => (
                                     <option key={value} value={value}>
@@ -600,23 +661,23 @@ export function ChatInterface() {
                             </select>
                         </div>
 
-                        <form onSubmit={handleSubmit} className="flex-1 relative bg-white rounded-xl shadow-[0_0_20px_rgba(0,0,0,0.05)] border border-gray-100 p-2 focus-within:shadow-[0_0_20px_rgba(0,65,125,0.1)] focus-within:border-[#00417d]/30 transition-all">
+                        <form onSubmit={handleSubmit} className="flex-1 min-w-0 relative bg-white rounded-xl shadow-[0_0_20px_rgba(0,0,0,0.05)] border border-gray-100 p-2 focus-within:shadow-[0_0_20px_rgba(0,65,125,0.1)] focus-within:border-[#00417d]/30 transition-all">
                             <input
+                                ref={inputRef}
                                 type="text"
                                 value={input}
                                 onChange={(e) => setInput(e.target.value)}
                                 placeholder={t("chat.inputPlaceholder", {
                                     userType: t(`userType.${userType}`),
                                 })}
-                                className="w-full bg-transparent text-gray-800 placeholder-gray-400 border-none focus:ring-0 px-4 py-3 pr-12 text-base"
+                                className="w-full bg-transparent text-gray-800 placeholder-gray-400 border-none focus:ring-0 px-3 md:px-4 py-3 short:py-1.5 pr-12 text-base"
                                 disabled={isLoading}
-                                autoFocus
                             />
                             <button
                                 type="submit"
                                 disabled={isLoading || !input.trim()}
                                 aria-label={t("chat.send")}
-                                className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-[#00417d] text-white rounded-lg hover:bg-[#002a52] disabled:opacity-50 disabled:hover:bg-[#00417d] transition-colors"
+                                className="absolute right-2 top-1/2 -translate-y-1/2 p-2.5 bg-[#00417d] text-white rounded-lg hover:bg-[#002a52] disabled:opacity-50 disabled:hover:bg-[#00417d] transition-colors"
                             >
                                 <Send className="w-4 h-4" />
                             </button>

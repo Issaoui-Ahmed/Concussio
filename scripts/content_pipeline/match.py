@@ -4,7 +4,7 @@ There are exactly two ways a resource gets a French counterpart:
 
     tool number   1.3 == 1.3             matched here, auto-accepted
     manual        a human paired them    recorded in pairs.json, never re-proposed
-    nothing       -                      English fallback, marked "(en anglais)"
+    nothing       -                      the English link is kept as-is
 
 Deliberately no LLM and no cross-language fuzzy text matching. Translating titles to compare
 them would introduce a nondeterministic step into a pipeline whose whole purpose is to be

@@ -1,4 +1,5 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from fastapi.routing import APIRoute
 import os
 import sys
@@ -10,6 +11,7 @@ PROJECT_ROOT = os.path.dirname(CURRENT_DIR)
 if PROJECT_ROOT not in sys.path:
     sys.path.append(PROJECT_ROOT)
 
+from api import demo_access
 from api.chat import app as chat_app
 from api.followups import app as followups_app
 from api.scraping import app as scraping_app
@@ -60,6 +62,23 @@ for sub_app in (
     resource_links_app, admin_pipeline_app,
 ):
     _copy_api_routes(sub_app)
+
+
+@app.middleware("http")
+async def enforce_demo_access(request: Request, call_next):
+    """Gate the chatbot endpoints on the same password the pages ask for.
+
+    Applied to the unified app rather than to each sub-app: routes are copied in above, so one
+    check here covers every path a request can actually reach. Which paths those are lives in
+    `api/demo_access.py`.
+    """
+    denial = demo_access.denial_for(
+        request.url.path, request.cookies.get(demo_access.COOKIE_NAME)
+    )
+    if denial is not None:
+        status, message = denial
+        return JSONResponse({"detail": message}, status_code=status)
+    return await call_next(request)
 
 
 @app.get("/api/health")

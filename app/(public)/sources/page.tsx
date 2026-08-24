@@ -6,9 +6,9 @@ export default function SourcesPage() {
     const t = useT();
 
     return (
-        <div className="max-w-4xl mx-auto py-12 px-6 overflow-y-auto h-full">
-            <h1 className="text-3xl font-bold mb-6 text-[#00417d]">{t("sources.title")}</h1>
-            <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100 space-y-4 text-gray-700 leading-relaxed">
+        <div className="max-w-4xl mx-auto py-8 px-4 sm:py-12 sm:px-6 overflow-y-auto h-full">
+            <h1 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6 text-[#00417d]">{t("sources.title")}</h1>
+            <div className="bg-white p-5 sm:p-8 rounded-xl shadow-sm border border-gray-100 space-y-4 text-gray-700 leading-relaxed">
                 <p>{t("sources.intro")}</p>
                 <h2 className="text-xl font-semibold text-[#00417d] mt-4">{t("sources.primaryHeading")}</h2>
                 <ul className="list-disc list-inside space-y-2 ml-2">

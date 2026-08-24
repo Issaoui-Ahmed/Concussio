@@ -618,8 +618,8 @@ export function ResourceWorkbench() {
                         >
                             Ressources
                         </a>
-                        . Pick one from each side to pair them. Unpaired resources fall back to
-                        English in the chat, marked &quot;(en anglais)&quot;.
+                        . Pick one from each side to pair them. Unpaired resources keep their
+                        English link in the chat.
                     </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
@@ -1054,7 +1054,7 @@ export function ResourceWorkbench() {
                     tone="danger"
                     confirmLabel="Remove pairing"
                     busy={busy}
-                    body="This English resource will have no French counterpart — the baseline and the matcher are both overruled, and it falls back to English in the chat, marked “(en anglais)”. Reversible: “Clear manual pairings” brings it back."
+                    body="This English resource will have no French counterpart — the baseline and the matcher are both overruled, and it keeps its English link in the chat. Reversible: “Clear manual pairings” brings it back."
                     onConfirm={confirmPending}
                     onCancel={() => setPending(null)}
                 />
