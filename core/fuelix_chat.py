@@ -1,3 +1,4 @@
+import logging
 import os
 import re
 import time
@@ -6,14 +7,37 @@ from typing import Any, Dict, List, Optional
 import requests
 from dotenv import load_dotenv
 
+from core.audience import is_community_audience, scrub_clinician_resources
 from core.prompts import build_fuelix_user_prompt
 
 
 load_dotenv()
 
+logger = logging.getLogger(__name__)
+
 DEFAULT_FUELIX_BASE_URL = "https://api.fuelix.ai/v1"
 DEFAULT_REASONING_EFFORT = "low"
 TERMINAL_RUN_STATES = {"completed", "failed", "cancelled", "expired", "incomplete"}
+# Terminal, but not success. A run can land here and still return an empty message list, which
+# is how the "no assistant text" failure presents.
+FAILED_RUN_STATES = TERMINAL_RUN_STATES - {"completed"}
+
+# Reading the thread straight after the run goes terminal occasionally comes back with no
+# assistant message yet. Re-reading is nearly free, so try that before concluding the whole run
+# produced nothing.
+MESSAGE_READ_ATTEMPTS = 3
+MESSAGE_READ_BACKOFF_SECONDS = 1.0
+
+# One question is allowed a second run when the first produces no text at all. Measured at
+# roughly 1 in 79 runs; the same question then succeeded immediately, so the failure is
+# transient and a retry is the difference between an answer and a 500.
+MAX_ANSWER_ATTEMPTS = 2
+# Total wall-clock ceiling for all attempts. Vercel kills the function at 300s (see
+# vercel.json), so a naive retry of a 240s run would be cut off mid-flight and cost the user
+# more than the failure it was meant to fix.
+ANSWER_BUDGET_SECONDS = int(os.getenv("FUELIX_ANSWER_BUDGET_SECONDS", "270"))
+# Do not start a retry that cannot plausibly finish; observed runs take 10-65s.
+MIN_SECONDS_TO_START_RETRY = 70
 # Fuel IX enforces a per-minute request quota, so polling has to stay modest even though a
 # faster first poll is what makes short runs feel quick.
 RATE_LIMIT_BACKOFF_SECONDS = 10.0
@@ -331,23 +355,30 @@ def fuelix_chat_completion(
     return text
 
 
-def generate_fuelix_answer(
-    user_query: str,
-    user_type: Optional[str],
-    lang: Optional[str] = None,
-    history: Optional[List[Dict[str, str]]] = None,
-) -> Dict[str, Any]:
-    """Run one question through the assistant.
+def _read_assistant_text(thread_id: str) -> str:
+    """Read the assistant's reply, re-reading briefly when the thread looks empty.
 
-    ``history`` is the conversation BEFORE ``user_query``; it is folded into the seeded user
-    message so follow-ups like "and for children?" resolve. Each call still creates a fresh
-    thread — no thread reuse across turns.
+    A run can reach a terminal state a moment before its message is readable. Re-reading costs
+    one cheap GET, so exhaust that before concluding the run produced nothing.
     """
-    started = time.perf_counter()
-    normalized_user_type = normalize_user_type(user_type)
-    assistant_id = resolve_assistant_id(normalized_user_type)
-    user_prompt = build_fuelix_user_prompt(user_query, normalized_user_type, lang, history)
+    for attempt in range(MESSAGE_READ_ATTEMPTS):
+        messages_payload = _request_fuelix(
+            "GET",
+            f"/threads/{thread_id}/messages",
+            params={"limit": 30, "order": "desc"},
+        )
+        answer = _extract_assistant_text(messages_payload)
+        if answer:
+            return answer
+        if attempt < MESSAGE_READ_ATTEMPTS - 1:
+            time.sleep(MESSAGE_READ_BACKOFF_SECONDS * (attempt + 1))
+    return ""
 
+
+def _attempt_fuelix_answer(
+    assistant_id: str, user_prompt: str, *, timeout_seconds: int
+) -> Dict[str, Any]:
+    """One create-run / poll / read cycle. Returns an empty ``answer`` rather than raising."""
     run_payload = _request_fuelix(
         "POST",
         "/threads/runs",
@@ -364,19 +395,86 @@ def generate_fuelix_answer(
     if not isinstance(run_id, str) or not isinstance(thread_id, str):
         raise RuntimeError("Fuel IX run response did not include id/thread_id.")
 
-    run_timeout_seconds = int(os.getenv("FUELIX_RUN_TIMEOUT_SECONDS", "240"))
-    final_run = _poll_terminal_run(thread_id, run_id, timeout_seconds=run_timeout_seconds)
+    final_run = _poll_terminal_run(thread_id, run_id, timeout_seconds=timeout_seconds)
     run_status = final_run.get("status") if isinstance(final_run, dict) else None
 
-    messages_payload = _request_fuelix(
-        "GET",
-        f"/threads/{thread_id}/messages",
-        params={"limit": 30, "order": "desc"},
-    )
-    answer = _extract_assistant_text(messages_payload)
-    if not answer:
-        raise RuntimeError("Fuel IX did not return assistant text in thread messages.")
-    answer = _strip_fuelix_citation_blocks(answer)
+    # A run that ended in a failure state has no text to wait for.
+    answer = "" if run_status in FAILED_RUN_STATES else _read_assistant_text(thread_id)
+    return {"answer": answer, "thread_id": thread_id, "run_id": run_id, "run_status": run_status}
+
+
+def generate_fuelix_answer(
+    user_query: str,
+    user_type: Optional[str],
+    lang: Optional[str] = None,
+    history: Optional[List[Dict[str, str]]] = None,
+) -> Dict[str, Any]:
+    """Run one question through the assistant.
+
+    ``history`` is the conversation BEFORE ``user_query``; it is folded into the seeded user
+    message so follow-ups like "and for children?" resolve. Each call still creates a fresh
+    thread — no thread reuse across turns.
+
+    A run that comes back with no assistant text is retried once, within a wall-clock budget.
+    """
+    started = time.perf_counter()
+    normalized_user_type = normalize_user_type(user_type)
+    assistant_id = resolve_assistant_id(normalized_user_type)
+    user_prompt = build_fuelix_user_prompt(user_query, normalized_user_type, lang, history)
+
+    run_timeout_seconds = int(os.getenv("FUELIX_RUN_TIMEOUT_SECONDS", "240"))
+
+    attempt = 0
+    result: Dict[str, Any] = {}
+    while True:
+        attempt += 1
+        remaining = ANSWER_BUDGET_SECONDS - (time.perf_counter() - started)
+        result = _attempt_fuelix_answer(
+            assistant_id,
+            user_prompt,
+            timeout_seconds=max(1, int(min(run_timeout_seconds, remaining))),
+        )
+        if result["answer"]:
+            break
+
+        remaining_after = ANSWER_BUDGET_SECONDS - (time.perf_counter() - started)
+        can_retry = (
+            attempt < MAX_ANSWER_ATTEMPTS and remaining_after >= MIN_SECONDS_TO_START_RETRY
+        )
+        logger.warning(
+            "Fuel IX returned no assistant text for a %s question (run %s, status %s, "
+            "attempt %d/%d, %.0fs of budget left). %s",
+            normalized_user_type, result["run_id"], result["run_status"],
+            attempt, MAX_ANSWER_ATTEMPTS, max(0.0, remaining_after),
+            "Retrying." if can_retry else "Giving up.",
+        )
+        if not can_retry:
+            # Name the run status: the old message said only "did not return assistant text",
+            # which gave a reader nothing to diagnose with.
+            raise RuntimeError(
+                "Fuel IX did not return assistant text after %d attempt(s) "
+                "(last run status: %s)." % (attempt, result["run_status"])
+            )
+
+    thread_id = result["thread_id"]
+    run_id = result["run_id"]
+    run_status = result["run_status"]
+    answer = _strip_fuelix_citation_blocks(result["answer"])
+
+    # Rule 3's backstop. The community assistants are told not to name clinician tools, but
+    # they read a corpus that lists SCAT6/SCOAT6/PECARN/CATCH2 under the recommendations a
+    # parent or coach asks about most, so some get through. Removals are logged rather than
+    # swallowed: the count is how we tell whether the prompt is holding.
+    scrubbed_resources: List[str] = []
+    if is_community_audience(normalized_user_type):
+        answer, scrubbed_resources = scrub_clinician_resources(answer)
+        if scrubbed_resources:
+            logger.info(
+                "Scrubbed %d clinician-only resource(s) from a %s answer: %s",
+                len(scrubbed_resources),
+                normalized_user_type,
+                " | ".join(item[:120] for item in scrubbed_resources),
+            )
 
     elapsed_ms = int((time.perf_counter() - started) * 1000)
     return {
@@ -386,4 +484,8 @@ def generate_fuelix_answer(
         "thread_id": thread_id,
         "run_id": run_id,
         "run_status": run_status,
+        "scrubbed_resources": scrubbed_resources,
+        # >1 means the first run came back empty and was retried. Worth surfacing: if this
+        # starts appearing often, the upstream problem is no longer occasional.
+        "attempts": attempt,
     }

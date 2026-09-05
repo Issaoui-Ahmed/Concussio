@@ -22,9 +22,25 @@ export const RESOURCES: Record<string, FrenchResource> = {
         url: "https://pedsconcussion.com/wp-content/uploads/Outil-1.3-Algorithme-de-gestion-des-symptomes-de-commotion-cerebrale-aigue-et-prolongee-1.pdf",
         title: "Algorithme de gestion des symptômes de commotion cérébrale aiguë et prolongée",
     },
+    "https://pedsconcussion.com/patient_information_sheet/": {
+        url: "https://pedsconcussion.com/fiche-dinformation-post-commotion/",
+        title: "Fiche D’Information Post-Commotion Cérébrale",
+    },
     "https://pedsconcussion.com/recognition/": {
         url: "https://pedsconcussion.com/reconnaissance/",
         title: "Outil de reconnaissance des commotions cérébrales",
+    },
+    "https://pedsconcussion.com/resource-for-coaches/": {
+        url: "https://pedsconcussion.com/fr/entraineur/",
+        title: "Fiche d’information pour les entraîneur",
+    },
+    "https://pedsconcussion.com/resource-for-parents/": {
+        url: "https://pedsconcussion.com/fr/parents/",
+        title: "Fiche d’information pour les parents",
+    },
+    "https://pedsconcussion.com/resource-for-teachers/": {
+        url: "https://pedsconcussion.com/fr/enseignants/",
+        title: "Fiche d’information pour les enseignants",
     },
     "https://pedsconcussion.com/return-to-activity-sport-school/": {
         url: "https://pedsconcussion.com/retour-aux-activites-sport-lecole/",
@@ -63,7 +79,7 @@ export const RESOURCES: Record<string, FrenchResource> = {
         title: "Algorithme de gestion des troubles de santé mentale prolongés",
     },
     "https://pedsconcussion.com/vce-manual/": {
-        url: "https://pedsconcussion.com/examen-virtuel-des-commotions-cerebrales-manuel-de-formation-telecharger/",
+        url: "https://pedsconcussion.com/examen-virtuel/",
         title: "Examen virtuel des commotions cérébrales: Manuel de Formation",
     },
 };

@@ -79,6 +79,10 @@ def chat_endpoint(request: ChatRequest):
             "thread_id": fuelix_raw.get("thread_id"),
             "run_id": fuelix_raw.get("run_id"),
             "run_status": fuelix_raw.get("run_status"),
+            # What the Rule 3 backstop removed on this turn, if anything. Not rendered by the
+            # chat UI; it is here so /admin/batch runs show whether the community prompts are
+            # holding on their own or leaning on the scrub.
+            "scrubbed_resources": fuelix_raw.get("scrubbed_resources") or [],
         }
         return {
             "answer": fuelix_result["answer"],

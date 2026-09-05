@@ -1,5 +1,11 @@
 from pathlib import Path
 
+from core.audience import (
+    TRIGGER_DIAGNOSIS_ASSESSMENT,
+    detect_content_triggers,
+    is_clinical_audience,
+)
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 RECOMMENDATIONS_PATH = PROJECT_ROOT / "all_rec_markdown.md"
@@ -126,6 +132,153 @@ If a message mixes the two — for example a greeting attached to a real clinica
 treat it as GUIDELINE mode and answer the clinical question."""
 
 
+# Canonical ENGLISH urls for the resources the rules below make mandatory.
+#
+# Pinned here rather than left to retrieval because inconsistency is the exact complaint these
+# rules answer: the corpus cites the 5P calculator four times over two different schemes
+# (http/https) and CRT6 under two different paths, and an assistant picking a different one per
+# run is what response-consistency testing found.
+#
+# ENGLISH ONLY, deliberately. The model never writes French urls -- it would invent the slugs --
+# so a French answer emits these same urls and ResourceLink.tsx swaps them at render time using
+# the `resource_pairs` table. Adding a French url here would bypass that and strand the swap.
+GUIDELINE_LINKS = {
+    # CRT6. `/recognition/` is the page the site's own community resources page links to, and
+    # the one paired to the French `/reconnaissance/`. `/crt6/` serves the raw 6MB PDF and has
+    # no French pairing. (The url in the client's request, /tools-resources/
+    # concussion-recognition-tool-6/, is a 404.)
+    "crt6": "https://pedsconcussion.com/recognition/",
+    "five_p": "https://www.5pconcussion.com/en/scorecalculator",
+    "acrm_criteria": "https://pedsconcussion.com/diagnostic_criteria/",
+    "physical_exam": "https://pedsconcussion.com/pedsconcussion-physical-examination/",
+    "return_to_activity": "https://pedsconcussion.com/return-to-activity-sport-school/",
+    "community_resources": "https://pedsconcussion.com/tools-resources/community-resources/",
+}
+
+# The community resource page for each non-clinical role. Each one has a clean French twin in
+# the pairing table, so a French parent lands on /fr/parents/ rather than on the French
+# /ressources/ index, which mixes community handouts with the clinical algorithms Rule 3 exists
+# to keep away from them.
+COMMUNITY_ROLE_LINKS = {
+    "Parent or Caregiver": "https://pedsconcussion.com/resource-for-parents/",
+    "Teacher": "https://pedsconcussion.com/resource-for-teachers/",
+    "Coach": "https://pedsconcussion.com/resource-for-coaches/",
+    "Youth": "https://pedsconcussion.com/patient_information_sheet/",
+    "patient": "https://pedsconcussion.com/patient_information_sheet/",
+}
+
+
+def _build_clinical_mandatory_directive():
+    """Rules 1 and 4 — healthcare professionals only.
+
+    Both fire on the same trigger (diagnosis / initial medical assessment / acute management)
+    and both land in the Living Guidelines Recommendations section, so they are written as one
+    block. Recommendation numbers follow the Domain 2 listing in the corpus, where 2.1d is the
+    risk-score recommendation; a few older cross-references elsewhere in the corpus call the
+    same content "2.1b", which is the numbering drift these fixed citations are meant to stop.
+    """
+    return f"""MANDATORY CLINICAL CONTENT — applies in GUIDELINE mode only.
+
+TRIGGER: the question concerns diagnosis, initial medical assessment, or acute concussion
+management. Read the trigger generously — "how do I assess", "what should I do for a patient
+who just hit their head", "how is concussion diagnosed", "what is the workup" all count.
+
+When it fires, the "Living Guidelines Recommendations" section MUST cover ALL of the following.
+Do not drop an item because the question was narrow, and do not merge them into one sentence.
+Cite each recommendation in-text with its number and level of evidence, and put each tool's
+link immediately after the tool is named.
+
+A. THE CORE DIAGNOSTIC RECOMMENDATIONS. Every one of these seven, every time:
+  1. Clinical diagnosis of concussion using the ACRM diagnostic criteria, as recommended on
+     pedsconcussion.com (Recommendation 2.1): {GUIDELINE_LINKS["acrm_criteria"]}
+  2. A comprehensive medical assessment by a physician or nurse practitioner, per Tool 2.1 and
+     Recommendation 2.1 (a-f): {GUIDELINE_LINKS["physical_exam"]}
+  3. Neurological, cervical spine, vestibular, and ocular examination, per the clinical
+     assessment on pedsconcussion.com (Recommendation 2.1b): {GUIDELINE_LINKS["physical_exam"]}
+  4. Imaging guidance, and the tools used to decide whether imaging is needed
+     (Recommendation 2.1c — Level A for CT, Level B for MRI). State that routine neuroimaging
+     is not indicated to diagnose concussion.
+  5. Medical follow-up within 1-2 weeks at most, and immediate follow-up on any deterioration
+     (Recommendation 2.8).
+  6. Clear emergency department referral guidance when red flags are present
+     (Recommendation 1.3). Name the red flags.
+  7. If a concussion is diagnosed, clear next steps: how much rest, when and how to return to
+     activity, and when to return to school — or to work for an older adolescent who works
+     (Recommendations 2.2 and 2.3): {GUIDELINE_LINKS["return_to_activity"]}
+
+B. RISK OF PROLONGED RECOVERY. In addition to A, and as its OWN PARAGRAPH inside the same
+   section, always include the following. This paragraph is required even when the clinician
+   did not ask about prognosis:
+  - Introduce the 5P Risk Calculator (Predicting Persistent Post-Concussive Problems in
+    Pediatrics) and link it directly: {GUIDELINE_LINKS["five_p"]}
+  - State that the Living Guideline recommends early identification of patients at increased
+    risk of a prolonged recovery (Recommendation 2.1d, Level A).
+  - Recommend early follow-up and referral for any patient identified as medium or high risk.
+  - Say what to do when risk is higher: refer to an interdisciplinary concussion team
+    (Recommendation 2.1e, Level A), with specialized interdisciplinary care ideally started
+    within the first two weeks post-injury (Recommendation 2.1f, Level B).
+
+Write this as clinical prose and bullets in your normal register — not as a checklist echoing
+the letters and numbers above."""
+
+
+def _build_community_mandatory_directive(user_type):
+    """Rules 2 and 3 — every non-clinical audience.
+
+    Rule 3 is a negative instruction working against the grain of this prompt: the whole
+    recommendations corpus sits below, and it lists SCAT6/SCOAT6/PECARN/CATCH2 under the very
+    recommendations a parent or coach is most likely to ask about. `core.audience` strips
+    whatever gets through anyway; this block is what keeps it from being written at all.
+    """
+    role_link = COMMUNITY_ROLE_LINKS.get(user_type, GUIDELINE_LINKS["community_resources"])
+
+    return f"""MANDATORY COMMUNITY CONTENT — applies in GUIDELINE mode only.
+
+A. CONCUSSION RECOGNITION.
+TRIGGER: the question concerns a suspected concussion, a possible concussion, or a head
+injury — including "I think my child has a concussion", "he took a hit to the head", "how do I
+know if this is a concussion".
+
+When it fires, ALWAYS include all three of:
+  1. A link to the Concussion Recognition Tool 6 (CRT6): {GUIDELINE_LINKS["crt6"]}
+  2. A brief explanation that the CRT6 is designed to help recognize a suspected concussion and
+     to identify red flags that require urgent medical assessment.
+  3. Clear guidance that a concussion suspected using the CRT6 must still be diagnosed by an
+     appropriately trained healthcare professional — a physician or nurse practitioner — after
+     an assessment, and that if any red flags are present the child needs urgent assessment in
+     an emergency department.
+
+B. RESOURCES YOU MAY NOT GIVE THIS USER.
+You are answering a community user, not a clinician. NEVER name, describe, recommend, or link
+any of the following, even when the recommendations below cite them, and even if the user asks
+for them by name:
+  - ACRM diagnostic criteria
+  - SCAT6 and Child SCAT6
+  - SCOAT6 and Child SCOAT6
+  - PCSI (Post-Concussion Symptom Inventory)
+  - ACE (Acute Concussion Evaluation)
+  - PECARN
+  - CATCH2
+  - clinical examination tools, including the Living Guideline Core Physical Examination
+  - clinical algorithms and clinical decision rules of any kind
+  - any other resource on pedsconcussion.com aimed at healthcare professionals
+
+The recommendations corpus below is written for a mixed audience and lists these tools openly.
+Reading them there is not permission to repeat them here. Where a recommendation's substance
+matters to this user, give the substance in plain language and leave the clinician tool out —
+for example, say that a doctor or nurse practitioner will examine balance, vision, and the neck,
+without naming the examination tool they use.
+
+C. RESOURCES YOU SHOULD GIVE THIS USER.
+Draw recommended resources from the Living Guideline's community resources, and link the page
+written for this user: {role_link}
+The full set of community resources is here: {GUIDELINE_LINKS["community_resources"]}
+The CRT6 above is a community tool and is always allowed. So are the return to activity, sport
+and school steps ({GUIDELINE_LINKS["return_to_activity"]}) and the post-concussion information
+sheet. If asked something only a clinician tool could answer, explain what a healthcare
+professional will do and recommend seeing one — never hand over the tool."""
+
+
 def format_history(messages):
     """Render prior turns as a plain transcript."""
     lines = []
@@ -213,6 +366,15 @@ def _build_generator_prompt(question_context, user_type, lang=None, recommendati
         What to Avoid: Medical terminology and diagnostic language
         """
 
+    # There is one assistant per user type, so each one carries only the rules for its own
+    # audience. A clinician never reads the community denylist and a coach never reads the
+    # clinical diagnostic checklist — which is both cheaper and, more to the point, keeps the
+    # community assistants from being handed a tidy list of the tools they must not name.
+    if is_clinical_audience(user_type):
+        mandatory_directive = _build_clinical_mandatory_directive()
+    else:
+        mandatory_directive = _build_community_mandatory_directive(user_type)
+
     return f""" You are a helphul assistant.
     {question_context}
 
@@ -241,7 +403,9 @@ Follow these rules:
 - Everytime a tool is mentioned, include its link right after the mention. 
 - In the "Information From the Literature" section, stick to the APA 7 citation style.
 
-Living Guidelines Recommendations:"{recommendations_markdown}" 
+{mandatory_directive}
+
+Living Guidelines Recommendations:"{recommendations_markdown}"
     """
 
 
@@ -260,6 +424,35 @@ def build_fuelix_assistant_instructions(user_type, recommendations_markdown=None
         user_type,
         None,
         recommendations_markdown,
+    )
+
+
+def _build_trigger_reminder(query, user_type):
+    """A one-line restatement of whichever mandatory rule this turn fires.
+
+    The assistant's own instructions carry the full rule; this only re-states that it applies
+    HERE, in the current turn, where it cannot be lost behind the recommendations corpus. It
+    stays empty when nothing triggers, so an ordinary question is not padded.
+    """
+    triggers = detect_content_triggers(query, user_type)
+    if not triggers:
+        return ""
+
+    if TRIGGER_DIAGNOSIS_ASSESSMENT in triggers:
+        return (
+            "\nRULE CHECK: this question concerns diagnosis, initial medical assessment, or "
+            "acute management. Your MANDATORY CLINICAL CONTENT block applies — cover all seven "
+            "core diagnostic recommendations AND include the separate paragraph on risk of "
+            "prolonged recovery with the 5P Risk Calculator link, both inside the Living "
+            "Guidelines Recommendations section.\n"
+        )
+
+    return (
+        "\nRULE CHECK: this question concerns a suspected or possible concussion, or a head "
+        "injury. Your MANDATORY COMMUNITY CONTENT block applies — include the CRT6 link, what "
+        "the CRT6 is for, and that diagnosis requires a physician or nurse practitioner with "
+        "urgent emergency department assessment if red flags are present. Give no "
+        "clinician-only tools.\n"
     )
 
 
@@ -292,6 +485,6 @@ def build_fuelix_user_prompt(query, user_type, lang=None, history=None):
 
     return f"""{history_block}Current {user_type} question:
 {query}
-{language_line}
+{language_line}{_build_trigger_reminder(query, user_type)}
 Answer this current question using the living guideline recommendations in your instructions and any available knowledge base. Resolve any pronouns or references in the current question against the conversation above. Use the cannot-be-answered fallback only if the current question cannot be answered from those recommendations.
 """

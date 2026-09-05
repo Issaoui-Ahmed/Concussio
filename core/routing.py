@@ -13,9 +13,9 @@ the caller falls through to the full pipeline.
 """
 
 import re
-import unicodedata
 from typing import Dict, List, Optional
 
+from core.audience import normalize_text as _normalize
 from core.fuelix_chat import fuelix_chat_completion
 
 
@@ -30,19 +30,10 @@ SMALLTALK_MAX_WORDS = 8
 ESCALATE_SENTINEL = "ESCALATE"
 
 
-def _normalize(text: str) -> str:
-    """Casefold, strip accents, drop punctuation/emoji, collapse whitespace.
-
-    Accents are stripped so a single accent-free pattern matches both "ça va" and "ca va";
-    every pattern in this module is therefore written without accents.
-    """
-    decomposed = unicodedata.normalize("NFKD", text or "")
-    without_accents = "".join(ch for ch in decomposed if not unicodedata.combining(ch))
-    lowered = without_accents.casefold()
-    # Keep letters/digits/spaces only. Apostrophes and hyphens become spaces so that
-    # "qu'est-ce que" normalizes to "qu est ce que".
-    cleaned = re.sub(r"[^a-z0-9\s]+", " ", lowered)
-    return re.sub(r"\s+", " ", cleaned).strip()
+# `_normalize` lives in core.audience so that module can stay a leaf (nothing in core imports
+# into it) while both it and this module match against the same accent-free, punctuation-free
+# form. Apostrophes and hyphens become spaces there, so "qu'est-ce que" normalizes to
+# "qu est ce que" and every pattern below is written that way.
 
 
 # Accent-free, lowercase. Liberal on purpose — every hit here routes to the slow-but-correct

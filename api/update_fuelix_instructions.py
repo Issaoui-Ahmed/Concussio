@@ -20,6 +20,7 @@ from api.rebuild_fuelix_assistants import (
     _find_by_name,
     _load_env,
     _paginated_items,
+    _published_corpus,
     _request,
 )
 
@@ -40,6 +41,16 @@ def main() -> int:
     print(f"Fuel IX instructions update ({'DRY RUN' if dry_run else 'EXECUTE'})")
     print("Scope: instructions field only. model, vector stores (tool_resources), and metadata are left untouched.")
 
+    # The corpus is EMBEDDED in the instructions this script writes, so where it is read from
+    # is not a detail. `build_fuelix_assistant_instructions(user_type)` with no corpus reads
+    # the committed all_rec_markdown.md, which nothing has written since the refresh moved to
+    # Vercel (read-only filesystem -- it publishes to Supabase instead). Patching from that
+    # file would quietly roll every assistant's guideline back to whenever it was last
+    # refreshed by hand. Read what was actually published, and refuse to guess -- same
+    # contract as rebuild_fuelix_assistants.py.
+    corpus = _published_corpus()
+    print(f"Corpus: {len(corpus)} chars, as published (from content_state)")
+
     existing = _paginated_items("/assistants", params={"order": "desc"})
 
     changed = 0
@@ -54,7 +65,9 @@ def main() -> int:
             continue
 
         assistant_id = match.get("id")
-        new_instructions = build_fuelix_assistant_instructions(user_type)
+        new_instructions = build_fuelix_assistant_instructions(
+            user_type, recommendations_markdown=corpus
+        )
         current_instructions = match.get("instructions") or ""
 
         if current_instructions.strip() == new_instructions.strip():
