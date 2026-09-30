@@ -31,7 +31,7 @@ from scripts.content_pipeline.urls import normalize_url
 TIER_TOOL_NUMBER = "tool-number"
 
 # The only tier this engine produces. Kept as a tuple so the publish-time re-check in
-# api/resource_links.py keeps reading as a membership test rather than an equality it would be
+# api/_resource_links.py keeps reading as a membership test rather than an equality it would be
 # easy to loosen by accident.
 AUTO_TIERS = (TIER_TOOL_NUMBER,)
 

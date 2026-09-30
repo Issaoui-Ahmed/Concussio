@@ -7,7 +7,7 @@ Three scrapes, three comparisons, three sinks:
     EN + FR listings  -> resource_pairs      -> the map the app resolves French links from
 
 Supabase holds the "what we have" side of each comparison, so a sink only fires when its own
-scrape actually differs. `api/cron.py` runs all three nightly on Vercel; `cli refresh` runs the
+scrape actually differs. `api/_cron.py` runs all three nightly on Vercel; `cli refresh` runs the
 same work locally.
 
 Contrary to what an earlier version of this docstring said, this is NOT a build-time pipeline.

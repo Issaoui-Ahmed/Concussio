@@ -12,15 +12,22 @@ if PROJECT_ROOT not in sys.path:
     sys.path.append(PROJECT_ROOT)
 
 from api import demo_access
-from api.chat import app as chat_app
-from api.followups import app as followups_app
-from api.scraping import app as scraping_app
-from api.fuelix import app as fuelix_app
-from api.translate import app as translate_app
-from api.cron import app as cron_app
-from api.resource_links import app as resource_links_app
-from api.admin_pipeline import app as admin_pipeline_app
-from api.research_log import app as research_log_app
+
+# The route modules are underscore-prefixed so Vercel does not deploy each as a function of its
+# own: it turns every api/*.py defining `app` into one, except names starting with "_". Unprefixed,
+# /api/chat was served straight from api/chat.py, never passing the demo-password middleware
+# below, and the project outgrew the Hobby plan's 12-function cap. Now every /api/* request is
+# rewritten to api/index.py (vercel.json) and reaches this app. A new route module needs the
+# prefix too.
+from api._chat import app as chat_app
+from api._followups import app as followups_app
+from api._scraping import app as scraping_app
+from api._fuelix import app as fuelix_app
+from api._translate import app as translate_app
+from api._cron import app as cron_app
+from api._resource_links import app as resource_links_app
+from api._admin_pipeline import app as admin_pipeline_app
+from api._research_log import app as research_log_app
 
 
 app = FastAPI(title="Concussio API")

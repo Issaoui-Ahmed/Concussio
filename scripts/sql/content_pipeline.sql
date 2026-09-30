@@ -2,7 +2,7 @@
 --
 -- Supabase is the "what we have" side of every comparison the pipeline makes. A Vercel
 -- function cannot write files, so a committed file can never be the record of what was last
--- published -- see api/cron.py. These three tables replace three file-based records that all
+-- published -- see api/_cron.py. These three tables replace three file-based records that all
 -- drifted from reality:
 --
 --     all_rec_markdown.md        -> content_state       (never updated on Vercel; drifted)

@@ -11,7 +11,7 @@ having beyond convenience:
 
 THIS ROUTE IS UNAUTHENTICATED, BY DECISION AND NOT BY OVERSIGHT. It was built behind a shared
 secret and the gate was removed on request: a secret typed per browser tab was judged more
-friction than it was worth for an internal tool. The pairing writes in api/resource_links.py
+friction than it was worth for an internal tool. The pairing writes in api/_resource_links.py
 were opened for the same reason. Read that as a deliberate posture, not a bug to quietly patch
 -- but read it clearly, because the blast radius is real:
 

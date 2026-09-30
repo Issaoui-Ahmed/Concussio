@@ -298,7 +298,7 @@ def resource_links_report() -> JSONResponse:
 #
 # These change which French document a clinician is sent to, and they are unauthenticated. A
 # shared-secret gate used to stand here and was removed on request, the same decision and for
-# the same reason as /api/admin/pipeline/run -- see the note at the top of api/admin_pipeline.py.
+# the same reason as /api/admin/pipeline/run -- see the note at the top of api/_admin_pipeline.py.
 # Read it as a deliberate posture, not an oversight.
 #
 # What limits the damage, none of it authentication: no write here destroys anything the system

@@ -34,7 +34,7 @@ import { ConfirmDialog } from "@/components/admin/ConfirmDialog";
  * Both report identically, so a preview is a rehearsal of the panel you will read afterwards.
  *
  * The confirm dialog is the only thing between a click and a production write: the endpoint is
- * deliberately unauthenticated (see api/admin_pipeline.py). That makes the dialog's wording load
+ * deliberately unauthenticated (see api/_admin_pipeline.py). That makes the dialog's wording load
  * -bearing rather than decorative — it is where "this publishes for real" gets said.
  */
 

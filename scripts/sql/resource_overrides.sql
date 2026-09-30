@@ -2,7 +2,7 @@
 --
 -- Run once in the Supabase SQL editor. Everything the admin UI writes lands here; the
 -- reviewed file data/resource-pairs.json stays the committed baseline and is never mutated at
--- runtime (a Vercel function cannot write files -- see api/cron.py).
+-- runtime (a Vercel function cannot write files -- see api/_cron.py).
 --
 -- Deleting every row in this table returns the app to exactly what the committed baseline plus
 -- the matcher produce. That is what the UI's "Clear manual overrides" button does, and it is

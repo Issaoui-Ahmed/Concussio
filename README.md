@@ -93,6 +93,10 @@ This project is optimized for deployment on **Vercel**.
 Notes:
 * `api/main.py` is the unified FastAPI app used locally and by Vercel.
 * `api/index.py` imports that unified app so Vercel can route `/api/*` requests to FastAPI while preserving the full request path.
+* The route modules it combines are named `api/_*.py`, and a new one must be too. Vercel deploys
+  every other `api/*.py` that defines `app` as a function of its own. That lets requests skip
+  `api/main.py` and the demo-password check it applies: `/api/chat` used to be served that way.
+  It also counts against the Hobby plan's limit of 12 functions per deployment.
 
 ## 🔒 Demo access
 

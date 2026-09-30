@@ -13,8 +13,8 @@ CLI.
 
 Three callers, one code path:
 
-    api/cron.py                        nightly, on Vercel Cron
-    api/admin_pipeline.py              the button in /admin/scraping
+    api/_cron.py                        nightly, on Vercel Cron
+    api/_admin_pipeline.py              the button in /admin/scraping
     scripts/content_pipeline/cli.py    local
 
 This module exists because those three were drifting. The orchestration used to live inside the
