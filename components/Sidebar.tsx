@@ -16,6 +16,12 @@ export interface Session {
     // `unknown[]` avoids a circular type dependency on ChatInterface's Message; callers cast.
     messages: unknown[];
     createdAt: number;
+    /**
+     * The random ID this conversation's research-log records share (core/research_log.py).
+     * Not `id`, which is a timestamp: the REB protocol promises a randomly generated one.
+     * Optional because chats saved before the log existed get theirs on their next message.
+     */
+    logSessionId?: string;
     // NOTE: `displayLang` was removed. Display language is now derived from the global app
     // locale (LanguageProvider), which is what makes one toggle switch every open chat.
 }

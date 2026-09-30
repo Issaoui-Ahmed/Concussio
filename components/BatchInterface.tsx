@@ -184,6 +184,9 @@ export function BatchInterface() {
                         message: newQuestions[i].text,
                         history: [],
                         user_type: userType,
+                        // Keeps admin test questions out of the CHEO study log. Honoured only
+                        // with the admin cookie this page already holds (api/admin_access.py).
+                        log: false,
                     }),
                 });
 

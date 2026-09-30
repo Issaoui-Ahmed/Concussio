@@ -12,3 +12,7 @@ python-multipart
 # recommendation HTML to Markdown; the scraper's own get_text() would strip every link,
 # image and bold run, which the corpus depends on.
 markdownify>=0.13.0
+
+# CHEO research log (core/sharepoint.py). Signs the certificate assertion Microsoft Entra accepts
+# in place of a client secret.
+cryptography>=42

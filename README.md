@@ -86,6 +86,8 @@ This project is optimized for deployment on **Vercel**.
     * `FUELIX_PRODUCT_ID` (optional, default is `core`)
     * `DEMO_PASSWORD` (required — see below; without it the deployment stays locked)
     * `ADMIN_PASSWORD` (required — see below; without it `/admin` stays locked)
+    * `SHAREPOINT_*` (the CHEO research log — see below; `SHAREPOINT_LOG_CHATS=true` in
+      production only, once the study starts)
 5.  Deploy!
 
 Notes:
@@ -118,14 +120,49 @@ two layouts and the `GATED_PATHS` entries from `api/demo_access.py`.
     invited tester holds the demo password, while the admin pages rerun the content pipeline,
     rewrite the resource pairings and delete Fuel IX vector stores, so the tooling has a secret
     of its own (`lib/adminAccess.ts`, cookie `concussio_admin_access`). It stacks on the demo
-    gate rather than replacing it, and fails closed the same way. Unlike the demo password,
-    nothing outside Next.js recomputes it.
+    gate rather than replacing it, and fails closed the same way.
 
-    It is a **page gate only**. `/api/admin/*`, `/api/fuelix/*`, `/api/scraping` and the writing
-    half of `/api/resource-links` are still reachable by anyone holding the demo cookie — as
-    they were before this password existed (see `GATED_PATHS` in `api/demo_access.py`). Gating
-    them too means teaching the Python middleware about the admin cookie and splitting
-    `/api/resource-links`, whose `GET` the public app depends on.
+    It is mostly a **page gate**. `/api/admin/*`, `/api/fuelix/*`, `/api/scraping` and the
+    writing half of `/api/resource-links` are still reachable by anyone holding the demo cookie
+    — as they were before this password existed (see `GATED_PATHS` in `api/demo_access.py`).
+    Gating them too means teaching the Python middleware about the admin cookie and splitting
+    `/api/resource-links`, whose `GET` the public app depends on. The exception is the research
+    log below: `api/admin_access.py` recomputes the admin cookie for its endpoints, which write
+    into CHEO's SharePoint.
+
+## 🧾 Research log (CHEO REB study)
+
+Every chat exchange is written as one JSON file into a CHEO SharePoint folder, and nowhere else
+(`core/research_log.py`). A file holds exactly what the approved protocol lists, and nothing
+more:
+
+| Field | Protocol wording |
+|---|---|
+| `session_id` | Randomly generated session ID. Made in the browser, one per conversation |
+| `timestamp` | Timestamp. When the question reached the server, UTC |
+| `user_type` | User type selected |
+| `question`, `answer` | Content of the conversation. `answer` is `null` when the chatbot failed |
+
+Adding a field is a protocol amendment, not a code change.
+
+*   **How it gets there.** `core/sharepoint.py` signs in to Microsoft Graph as the app
+    registration CHEO created, with a certificate (no user, no client secret), and writes with
+    the `Sites.Selected` permission plus a `write` grant on the one site. The write happens in
+    the same request that produced the answer, before the answer is sent.
+*   **Nowhere else.** No local copy, no retry queue, and no conversation text in the server's
+    logs. A failed write logs the error alone and drops the record. It never costs the
+    participant the answer.
+*   **Switched on per deployment.** `SHAREPOINT_LOG_CHATS=true` turns chat logging on. Set it in
+    the production env when the study starts and nowhere else, so developers' and preview
+    deployments' chats stay out of the study folder. The batch tool's questions stay out too
+    (`log: false`, honoured only with the admin cookie).
+*   **Configuration.** The `SHAREPOINT_*` variables in `.env.example`. CHEO's actual values
+    live only in `.env` and the Vercel env, never in the repository.
+*   **Testing.** `/admin/research-log` → **Run test**. It signs in, checks the token's
+    permission, opens the site and folder, writes a `TEST_…` record through the same code a
+    chat uses, then reads the file back and compares it byte for byte. Each step reports what
+    failed and, where it is on CHEO's side, what they still need to do. That test file is the
+    only thing the app ever reads back from the folder.
 
 ## 📜 License
 

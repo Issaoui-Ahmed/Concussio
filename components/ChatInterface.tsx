@@ -28,6 +28,19 @@ interface Message {
 
 const createMessageId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 
+/**
+ * A random v4 UUID for the research log. Not `crypto.randomUUID()` alone: it only exists on
+ * secure origins, and a phone trying the dev server over the LAN is on plain http.
+ */
+const createLogSessionId = (): string => {
+    if (typeof crypto.randomUUID === "function") return crypto.randomUUID();
+    const bytes = crypto.getRandomValues(new Uint8Array(16));
+    bytes[6] = (bytes[6] & 0x0f) | 0x40;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+    const hex = Array.from(bytes, byte => byte.toString(16).padStart(2, "0")).join("");
+    return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+};
+
 const SESSIONS_KEY = "concussio_sessions_v2";
 const LEGACY_SESSIONS_KEY = "concussio_sessions";
 
@@ -163,10 +176,11 @@ export function ChatInterface() {
             title: "New Chat",
             messages: [],
             createdAt: Date.now(),
+            logSessionId: createLogSessionId(),
         };
         setSessions(prev => [newSession, ...prev]);
         setCurrentSessionId(newSession.id);
-        return newSession.id;
+        return newSession;
     };
 
     const handleDeleteSession = (e: React.MouseEvent, id: string) => {
@@ -417,9 +431,14 @@ export function ChatInterface() {
         }
 
         let activeSessionId = currentSessionId;
+        let storedLogSessionId = sessions.find(s => s.id === activeSessionId)?.logSessionId;
         if (!activeSessionId) {
-            activeSessionId = createNewSession();
+            const created = createNewSession();
+            activeSessionId = created.id;
+            storedLogSessionId = created.logSessionId;
         }
+        // Chats saved before the research log existed get their ID on their next message.
+        const logSessionId = storedLogSessionId ?? createLogSessionId();
 
         const userMessage: Message = {
             id: createMessageId(),
@@ -434,7 +453,12 @@ export function ChatInterface() {
                     s.messages.length === 0
                         ? trimmedInput.slice(0, 30) + (trimmedInput.length > 30 ? "..." : "")
                         : s.title;
-                return { ...s, title: newTitle, messages: [...s.messages, userMessage] };
+                return {
+                    ...s,
+                    title: newTitle,
+                    logSessionId: s.logSessionId ?? logSessionId,
+                    messages: [...s.messages, userMessage],
+                };
             }
             return s;
         }));
@@ -456,6 +480,7 @@ export function ChatInterface() {
                     history: historyPayload,
                     user_type: userType,
                     lang: resolvedLang,
+                    session_id: logSessionId,
                 }),
             });
 

@@ -21,9 +21,10 @@ export const ADMIN_ACCESS_COOKIE = "concussio_admin_access";
  * A different hash prefix from the demo token, so the two cookies stay distinct even when both
  * variables are set to the same string -- neither can be replayed as the other.
  *
- * Nothing outside Next.js recomputes this one: unlike the demo token, which `api/demo_access.py`
- * derives from the same variable, the admin gate is a page gate only. The endpoints the admin
- * pages call are not gated on it -- see the README.
+ * For most of /admin this is a page gate only: the endpoints those pages call are not checked
+ * against it -- see the README. The exception is `api/admin_access.py`, which recomputes it for
+ * the research-log endpoints (they write into CHEO's SharePoint) and for the batch tool's opt-out
+ * from the research log. Keep the cookie on path "/": that is what carries it to those calls.
  */
 export function adminAccessToken(password: string): string {
     return createHash("sha256").update(`concussio-admin-access:${password}`).digest("hex");
