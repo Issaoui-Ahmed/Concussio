@@ -9,16 +9,18 @@ interface EntryDialogProps {
     /** The single button that advances to the next step. */
     actionLabel: string;
     onAction: () => void;
+    /** Holds the button until the step has what it needs, e.g. a choice made. */
+    actionDisabled?: boolean;
     children: React.ReactNode;
 }
 
 /**
- * The chrome shared by the demo/testing notice and the disclaimer: one blocking overlay, a
+ * The chrome shared by the entry steps (demo/testing notice, disclaimer, user-group picker): one blocking overlay, a
  * heading with the language toggle beside it, a scrollable body, one button out.
  *
- * Choosing a language in either header sets it for the whole app.
+ * Choosing a language in any header sets it for the whole app.
  */
-export function EntryDialog({ id, title, actionLabel, onAction, children }: EntryDialogProps) {
+export function EntryDialog({ id, title, actionLabel, onAction, actionDisabled = false, children }: EntryDialogProps) {
     return (
         <div
             role="dialog"
@@ -45,7 +47,8 @@ export function EntryDialog({ id, title, actionLabel, onAction, children }: Entr
                 <div className="p-3 short:p-2 sm:p-4 border-t border-gray-100 bg-gray-50 flex justify-end">
                     <button
                         onClick={onAction}
-                        className="w-full short:w-auto sm:w-auto px-6 py-3 short:py-2 sm:py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                        disabled={actionDisabled}
+                        className="disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-600 w-full short:w-auto sm:w-auto px-6 py-3 short:py-2 sm:py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                     >
                         {actionLabel}
                     </button>

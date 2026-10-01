@@ -46,8 +46,8 @@ export const en = {
     "followUps.default.2": "What should I do first?",
     "followUps.default.3": "What warning signs mean I should seek urgent care?",
 
-    // The three screens a visitor passes through, in order: password gate, demo notice,
-    // disclaimer.
+    // The screens a visitor passes through, in order: password gate, demo notice, disclaimer,
+    // user-group picker.
     "gate.title": "Password Required",
     "gate.intro":
         "This prototype of the Pediatric Concussion Chatbot is open for testing by invitation only. Enter the password you were given to continue.",
@@ -91,6 +91,11 @@ export const en = {
     "disclaimer.p5":
         "Any adaptations must include the statement: “Adapted from the Living Guideline for Pediatric Concussion,” with or without permission, as applicable.",
     "disclaimer.accept": "I Understand",
+
+    "userTypePicker.title": "Who are you?",
+    "userTypePicker.intro":
+        "Please choose the option that best describes you. ConcussCare will tailor its answers to you. You can change this at any time.",
+    "userTypePicker.start": "Start chatting",
 
     "about.title": "About Us",
     "about.p1":

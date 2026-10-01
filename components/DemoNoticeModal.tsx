@@ -4,7 +4,7 @@ import { useT } from "@/lib/i18n/LanguageProvider";
 import { EntryDialog } from "./EntryDialog";
 
 /**
- * First of the two acknowledgements, shown once the password gate is passed: what this
+ * First of the three entry steps, shown once the password gate is passed: what this
  * deployment is (a prototype under evaluation) and what not to type into it.
  */
 export function DemoNoticeModal({ onContinue }: { onContinue: () => void }) {

@@ -86,6 +86,11 @@ export const fr: Record<TranslationKey, string> = {
         "Toute adaptation doit comporter la mention : « Adapté des lignes directrices évolutives sur les commotions cérébrales pédiatriques », avec ou sans autorisation, selon le cas.",
     "disclaimer.accept": "J'ai compris",
 
+    "userTypePicker.title": "Qui êtes-vous ?",
+    "userTypePicker.intro":
+        "Veuillez choisir l'option qui vous décrit le mieux. ConcussCare adaptera ses réponses en fonction de votre choix. Vous pouvez le modifier en tout temps.",
+    "userTypePicker.start": "Commencer la conversation",
+
     "about.title": "À propos de nous",
     "about.p1":
         "Bienvenue sur ConcussCare, votre assistant de confiance pour les lignes directrices sur les commotions cérébrales et le soutien aux patients.",

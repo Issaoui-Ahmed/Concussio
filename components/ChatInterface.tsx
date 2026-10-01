@@ -8,6 +8,7 @@ import { Sidebar, Session } from "./Sidebar";
 import { Menu, Send } from "lucide-react";
 import { useLocale, useT, type Locale } from "@/lib/i18n/LanguageProvider";
 import { detectLanguage } from "@/lib/i18n/detect";
+import { USER_TYPES, chooseUserType, useUserType, type UserType } from "@/lib/entryFlow";
 
 type FollowUpsStatus = "idle" | "loading" | "ready" | "error";
 type Lang = Locale;
@@ -48,19 +49,6 @@ const LEGACY_SESSIONS_KEY = "concussio_sessions";
 // single batch never grows large enough for the model to drop or merge items.
 const TRANSLATE_CHUNK_CHARS = 12000;
 
-const USER_TYPES = [
-    "Healthcare Professional",
-    "Parent or Caregiver",
-    "Youth",
-    "Teacher",
-    "Coach",
-] as const;
-
-// The English string is the wire value: it routes to the Fuel IX assistant
-// (ASSISTANT_ENV_BY_USER_TYPE) and selects the prompt personalization. Only the label is
-// translated. Typing it as the union keeps `userType.${userType}` a checked dictionary key.
-type UserType = (typeof USER_TYPES)[number];
-
 /**
  * Sessions written before the global-locale rework carried a per-chat `displayLang`. The
  * cached `translations` on each message are still valid, so they are kept; only the dead
@@ -99,7 +87,11 @@ export function ChatInterface() {
     const [input, setInput] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [elapsedTime, setElapsedTime] = useState(0);
-    const [userType, setUserType] = useState<UserType>("Healthcare Professional");
+    // Chosen on the entry screen and shared with it through sessionStorage. Null only while
+    // that screen is still up (or during SSR), so the fallback is never what a message is
+    // sent as -- sendMessage refuses to send until a group has been chosen.
+    const chosenUserType = useUserType();
+    const userType: UserType = chosenUserType ?? USER_TYPES[0];
     // Drawer state for the sidebar below md; above it the sidebar ignores this.
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const bottomRef = useRef<HTMLDivElement>(null);
@@ -420,7 +412,7 @@ export function ChatInterface() {
 
     const sendMessage = async (rawText: string, source: "input" | "followup" = "input") => {
         const trimmedInput = rawText.trim();
-        if (!trimmedInput || isLoading) return;
+        if (!trimmedInput || isLoading || !chosenUserType) return;
 
         // Auto-detect drives the global toggle. Only a confident detection may override the
         // locale — short or ambiguous input must not undo a toggle the user just set.
@@ -672,7 +664,7 @@ export function ChatInterface() {
                         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-1 flex shrink-0 short:mb-1 sm:mb-1">
                             <select
                                 value={userType}
-                                onChange={(e) => setUserType(e.target.value as UserType)}
+                                onChange={(e) => chooseUserType(e.target.value as UserType)}
                                 disabled={messages.length > 0}
                                 // text-base on touch widths: any control under 16px makes iOS
                                 // Safari zoom the page in on focus, and it never zooms back.

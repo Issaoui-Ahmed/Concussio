@@ -4,7 +4,7 @@ import { useT } from "@/lib/i18n/LanguageProvider";
 import { EntryDialog } from "./EntryDialog";
 
 /**
- * Second of the two acknowledgements. Which step is showing is decided in `lib/entryFlow.ts`,
+ * Second of the three entry steps. Which step is showing is decided in `lib/entryFlow.ts`,
  * not here, so this modal cannot appear over the demo/testing notice.
  */
 export function DisclaimerModal({ onAccept }: { onAccept: () => void }) {
