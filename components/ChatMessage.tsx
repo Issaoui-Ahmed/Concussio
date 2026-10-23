@@ -8,6 +8,7 @@ import { User } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { useLocale, useT } from "@/lib/i18n/LanguageProvider";
+import { localizeFixedFollowUp } from "@/lib/followUps";
 import { ResourceLink } from "./ResourceLink";
 
 function cn(...inputs: ClassValue[]) {
@@ -110,8 +111,9 @@ export function ChatMessage({
             : translations?.[locale] ?? content;
 
     const displayContent = isUser ? baseContent : stripFuelIxCitationBlocks(baseContent);
-    const displayFollowUps =
-        lang === locale ? followUps : followUpTranslations?.[locale] ?? followUps;
+    const displayFollowUps = (
+        lang === locale ? followUps : followUpTranslations?.[locale] ?? followUps
+    ).map((question, index) => localizeFixedFollowUp(followUps[index], locale) ?? question);
     const isTranslating =
         !isUser &&
         lang !== locale &&

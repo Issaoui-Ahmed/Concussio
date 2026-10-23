@@ -9,6 +9,7 @@ import { Menu, Send } from "lucide-react";
 import { useLocale, useT, type Locale } from "@/lib/i18n/LanguageProvider";
 import { detectLanguage } from "@/lib/i18n/detect";
 import { USER_TYPES, chooseUserType, useUserType, type UserType } from "@/lib/entryFlow";
+import { normalizeFollowUps } from "@/lib/followUps";
 
 type FollowUpsStatus = "idle" | "loading" | "ready" | "error";
 type Lang = Locale;
@@ -110,11 +111,6 @@ export function ChatInterface() {
         localeRef.current = locale;
     }, [locale]);
 
-    const defaultFollowUps = useMemo(
-        () => [t("followUps.default.1"), t("followUps.default.2"), t("followUps.default.3")],
-        [t]
-    );
-
     // Timer for loading state
     useEffect(() => {
         let interval: NodeJS.Timeout;
@@ -186,20 +182,6 @@ export function ChatInterface() {
     const handleSelectSession = (id: string) => {
         setCurrentSessionId(id);
     };
-
-    const normalizeFollowUps = useCallback(
-        (items: string[]) => {
-            const deduped = Array.from(
-                new Set(items.map(item => item.trim()).filter(item => item.length > 0))
-            );
-            for (const fallback of defaultFollowUps) {
-                if (deduped.length >= 3) break;
-                if (!deduped.includes(fallback)) deduped.push(fallback);
-            }
-            return deduped.slice(0, 3);
-        },
-        [defaultFollowUps]
-    );
 
     const patchMessage = useCallback(
         (sessionId: string, messageId: string, patch: (message: Message) => Message) => {
@@ -372,7 +354,7 @@ export function ChatInterface() {
         lang: Lang;
     }) => {
         const applyFollowUps = (items: string[]) => {
-            const normalized = normalizeFollowUps(items);
+            const normalized = normalizeFollowUps(items, userType, params.lang);
             patchMessage(params.sessionId, params.assistantMessageId, m => ({
                 ...m,
                 followUps: normalized,

@@ -43,6 +43,7 @@ export const fr: Record<TranslationKey, string> = {
     "followUps.default.1": "Pouvez-vous expliquer cela plus simplement ?",
     "followUps.default.2": "Que dois-je faire en premier ?",
     "followUps.default.3": "Quels signes d'alerte doivent m'amener à consulter d'urgence ?",
+    "followUps.comprehension": "Pouvez-vous expliquer cela autrement ?",
 
     "gate.title": "Mot de passe requis",
     "gate.intro":

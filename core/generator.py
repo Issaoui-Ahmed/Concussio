@@ -11,7 +11,7 @@ import json
 import re
 from typing import List
 
-from core.fuelix_chat import fuelix_chat_completion
+from core.fuelix_chat import fuelix_chat_completion, normalize_user_type
 
 
 
@@ -36,9 +36,18 @@ FALLBACK_FOLLOW_UPS_BY_LANG = {
 # Kept for backwards compatibility with existing callers.
 FALLBACK_FOLLOW_UPS = FALLBACK_FOLLOW_UPS_BY_LANG["en"]
 
+COMPREHENSION_USER_TYPES = {"Youth", "Parent or Caregiver", "Teacher", "Coach"}
+COMPREHENSION_FOLLOW_UP_BY_LANG = {
+    "en": "Can you explain that another way?",
+    "fr": "Pouvez-vous expliquer cela autrement ?",
+}
 
-def _fallback_follow_ups(lang):
-    return list(FALLBACK_FOLLOW_UPS_BY_LANG.get(lang or "en", FALLBACK_FOLLOW_UPS_BY_LANG["en"]))
+
+def _fallback_follow_ups(lang, first_follow_up=None):
+    follow_ups = list(FALLBACK_FOLLOW_UPS_BY_LANG.get(lang or "en", FALLBACK_FOLLOW_UPS_BY_LANG["en"]))
+    if first_follow_up:
+        follow_ups[0] = first_follow_up
+    return follow_ups
 
 
 def _clean_follow_up(text: str) -> str:
@@ -50,7 +59,7 @@ def _clean_follow_up(text: str) -> str:
     return cleaned
 
 
-def _extract_follow_ups(raw_output: str, lang: str = "en") -> List[str]:
+def _extract_follow_ups(raw_output: str, lang: str = "en", first_follow_up=None) -> List[str]:
     raw = (raw_output or "").strip()
     candidates: List[str] = []
 
@@ -82,8 +91,9 @@ def _extract_follow_ups(raw_output: str, lang: str = "en") -> List[str]:
             if bullet_free:
                 candidates.append(bullet_free)
 
-    cleaned_follow_ups: List[str] = []
-    seen = set()
+    # Keep the comprehension check first regardless of what the model returns.
+    cleaned_follow_ups: List[str] = [first_follow_up] if first_follow_up else []
+    seen = {first_follow_up.lower()} if first_follow_up else set()
     for item in candidates:
         cleaned = _clean_follow_up(item)
         if not cleaned:
@@ -96,7 +106,7 @@ def _extract_follow_ups(raw_output: str, lang: str = "en") -> List[str]:
         if len(cleaned_follow_ups) == 3:
             break
 
-    for fallback in _fallback_follow_ups(lang):
+    for fallback in _fallback_follow_ups(lang, first_follow_up):
         if len(cleaned_follow_ups) == 3:
             break
         key = fallback.lower()
@@ -116,6 +126,11 @@ def generate_follow_ups(
 ) -> List[str]:
     resolved_lang = lang if lang in FALLBACK_FOLLOW_UPS_BY_LANG else "en"
     language_name = "French" if resolved_lang == "fr" else "English"
+    first_follow_up = (
+        COMPREHENSION_FOLLOW_UP_BY_LANG[resolved_lang]
+        if normalize_user_type(user_type) in COMPREHENSION_USER_TYPES
+        else None
+    )
 
     prompt = f"""
 You create follow-up question suggestions for a healthcare chatbot.
@@ -139,7 +154,7 @@ Task:
             messages=[{"role": "user", "content": prompt}],
             model=FOLLOWUP_MODEL,
         )
-        return _extract_follow_ups(raw_output, resolved_lang)
+        return _extract_follow_ups(raw_output, resolved_lang, first_follow_up)
     except Exception:
-        return _fallback_follow_ups(resolved_lang)
+        return _fallback_follow_ups(resolved_lang, first_follow_up)
 

@@ -45,6 +45,7 @@ export const en = {
     "followUps.default.1": "Can you explain that in simpler terms?",
     "followUps.default.2": "What should I do first?",
     "followUps.default.3": "What warning signs mean I should seek urgent care?",
+    "followUps.comprehension": "Can you explain that another way?",
 
     // The screens a visitor passes through, in order: password gate, demo notice, disclaimer,
     // user-group picker.
