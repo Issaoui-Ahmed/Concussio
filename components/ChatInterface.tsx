@@ -95,7 +95,7 @@ export function ChatInterface() {
     const userType: UserType = chosenUserType ?? USER_TYPES[0];
     // Drawer state for the sidebar below md; above it the sidebar ignores this.
     const [sidebarOpen, setSidebarOpen] = useState(false);
-    const bottomRef = useRef<HTMLDivElement>(null);
+    const latestMessageRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
 
     // Latest values for async work that must not read a stale closure.
@@ -146,9 +146,11 @@ export function ChatInterface() {
         [currentSession]
     );
 
+    // Reveal the beginning once per new message or opened session. Content updates (such
+    // as follow-ups, translations, or streamed text) must leave the reading position alone.
     useEffect(() => {
-        bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, [messages]);
+        latestMessageRef.current?.scrollIntoView({ behavior: "instant", block: "start" });
+    }, [currentSessionId, messages.length]);
 
     // Desktop only. Autofocusing on a phone raises the on-screen keyboard over the entry
     // modals, hiding half of a disclaimer the visitor has not read yet.
@@ -564,7 +566,7 @@ export function ChatInterface() {
                 </div>
 
                 {/* Chat Area */}
-                <div className="flex-1 overflow-y-auto w-full">
+                <div className="flex-1 overflow-y-auto w-full [overflow-anchor:none]">
                     <div className="flex flex-col min-h-full pt-6 short:pt-3 md:pt-10">
                         {(!currentSessionId || messages.length === 0) ? (
                             // m-auto, not flex-1 + justify-center: centred content that grows
@@ -590,19 +592,24 @@ export function ChatInterface() {
                         ) : (
                             <div className="flex flex-col gap-5 md:gap-6 w-full max-w-4xl mx-auto px-3 md:px-4 pb-4">
                                 {messages.map((msg, idx) => (
-                                    <ChatMessage
+                                    <div
                                         key={msg.id ?? `${idx}-${msg.role}`}
-                                        role={msg.role}
-                                        content={msg.content}
-                                        lang={msg.lang}
-                                        translations={msg.translations}
-                                        translationStatus={msg.translationStatus}
-                                        followUps={msg.followUps}
-                                        followUpTranslations={msg.followUpTranslations}
-                                        followUpsStatus={msg.followUpsStatus}
-                                        onFollowUpClick={(question) => void sendMessage(question, "followup")}
-                                        followUpsDisabled={isLoading}
-                                    />
+                                        ref={idx === messages.length - 1 ? latestMessageRef : undefined}
+                                        className="scroll-mt-6 short:scroll-mt-3 md:scroll-mt-10"
+                                    >
+                                        <ChatMessage
+                                            role={msg.role}
+                                            content={msg.content}
+                                            lang={msg.lang}
+                                            translations={msg.translations}
+                                            translationStatus={msg.translationStatus}
+                                            followUps={msg.followUps}
+                                            followUpTranslations={msg.followUpTranslations}
+                                            followUpsStatus={msg.followUpsStatus}
+                                            onFollowUpClick={(question) => void sendMessage(question, "followup")}
+                                            followUpsDisabled={isLoading}
+                                        />
+                                    </div>
                                 ))}
 
                                 {isLoading && (
@@ -619,7 +626,6 @@ export function ChatInterface() {
                                         </div>
                                     </div>
                                 )}
-                                <div ref={bottomRef} />
                             </div>
                         )}
                     </div>
