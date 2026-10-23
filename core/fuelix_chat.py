@@ -1,7 +1,7 @@
 import logging
 import os
-import re
 import time
+from functools import lru_cache
 from typing import Any, Dict, List, Optional
 
 import requests
@@ -9,6 +9,11 @@ from dotenv import load_dotenv
 
 from core.audience import is_community_audience, scrub_clinician_resources
 from core.prompts import build_fuelix_user_prompt
+from core.response_format import (
+    build_response_presentation_directive,
+    format_response,
+    strip_internal_citations,
+)
 
 
 load_dotenv()
@@ -41,15 +46,6 @@ MIN_SECONDS_TO_START_RETRY = 70
 # Fuel IX enforces a per-minute request quota, so polling has to stay modest even though a
 # faster first poll is what makes short runs feel quick.
 RATE_LIMIT_BACKOFF_SECONDS = 10.0
-FUELIX_CITATION_HEADING_RE = re.compile(
-    r"^\s*(?:#{1,6}\s*)?(?:[*_]{1,3})?\s*(?:<<\s*)?copilot(?:\s*>>)?\s+knowledge\s+base\s+citations\s*(?:[*_]{1,3})?\s*:?\s*$",
-    re.IGNORECASE,
-)
-FUELIX_CITATION_ENTRY_RE = re.compile(r"^\s*(?:[-*+]\s*)?\[\d+\]\s+.+$")
-FUELIX_INLINE_CITATION_RE = re.compile(
-    r"[^\S\n]*(?:[*_]{1,3})?[^\S\n]*(?:<<[^\S\n]*)?copilot(?:[^\S\n]*>>)?[^\S\n]+knowledge[^\S\n]+base[^\S\n]+citations[^\S\n]*(?:[*_]{1,3})?[^\S\n]*:?[^\S\n]*(?:[-*+][^\S\n]*)?(?:\[\d+\][^\S\n]+[^;\n]+(?:;[^\S\n]*)?)*",
-    re.IGNORECASE,
-)
 
 CANONICAL_USER_TYPES = {
     "patient": "patient",
@@ -212,38 +208,7 @@ def _extract_assistant_text(messages_payload: Any) -> str:
 
 
 def _strip_fuelix_citation_blocks(answer: str) -> str:
-    lines = answer.splitlines()
-    cleaned: List[str] = []
-    index = 0
-
-    while index < len(lines):
-        if not FUELIX_CITATION_HEADING_RE.match(lines[index]):
-            cleaned.append(lines[index])
-            index += 1
-            continue
-
-        index += 1
-        while index < len(lines):
-            line = lines[index]
-            if not line.strip() or FUELIX_CITATION_ENTRY_RE.match(line):
-                index += 1
-                continue
-            break
-
-        while cleaned and not cleaned[-1].strip():
-            cleaned.pop()
-        if index < len(lines) and cleaned and lines[index].strip():
-            cleaned.append("")
-
-    cleaned_text = "\n".join(cleaned)
-    cleaned_text = FUELIX_INLINE_CITATION_RE.sub("", cleaned_text)
-    cleaned_text = "\n".join(
-        line
-        for line in cleaned_text.splitlines()
-        if not FUELIX_CITATION_ENTRY_RE.match(line) and not re.match(r"^\s*[-*+]\s*$", line)
-    )
-    cleaned_text = re.sub(r"[ \t]+\n", "\n", cleaned_text)
-    return re.sub(r"\n{3,}", "\n\n", cleaned_text).strip()
+    return strip_internal_citations(answer)
 
 
 def _poll_terminal_run(
@@ -376,7 +341,8 @@ def _read_assistant_text(thread_id: str) -> str:
 
 
 def _attempt_fuelix_answer(
-    assistant_id: str, user_prompt: str, *, timeout_seconds: int
+    assistant_id: str, user_prompt: str, *, timeout_seconds: int,
+    instructions: str,
 ) -> Dict[str, Any]:
     """One create-run / poll / read cycle. Returns an empty ``answer`` rather than raising."""
     run_payload = _request_fuelix(
@@ -384,6 +350,7 @@ def _attempt_fuelix_answer(
         "/threads/runs",
         json_payload={
             "assistant_id": assistant_id,
+            "instructions": instructions,
             "thread": {"messages": [{"role": "user", "content": user_prompt}]},
             "reasoning": {"effort": DEFAULT_REASONING_EFFORT},
             "reasoning_effort": DEFAULT_REASONING_EFFORT,
@@ -401,6 +368,20 @@ def _attempt_fuelix_answer(
     # A run that ended in a failure state has no text to wait for.
     answer = "" if run_status in FAILED_RUN_STATES else _read_assistant_text(thread_id)
     return {"answer": answer, "thread_id": thread_id, "run_id": run_id, "run_status": run_status}
+
+
+@lru_cache(maxsize=32)
+def _assistant_instructions(assistant_id: str, bucket: int) -> str:
+    """Read the actual published instructions, including their current guideline corpus.
+
+    Fuel IX honors ``instructions`` on a run but silently ignores ``additional_instructions``
+    (verified against the service). Preserve the full published prompt when overriding it.
+    """
+    assistant = _request_fuelix("GET", f"/assistants/{assistant_id}")
+    instructions = assistant.get("instructions") if isinstance(assistant, dict) else None
+    if not isinstance(instructions, str) or not instructions.strip():
+        raise RuntimeError("Fuel IX assistant has no published instructions.")
+    return instructions
 
 
 def generate_fuelix_answer(
@@ -421,6 +402,14 @@ def generate_fuelix_answer(
     normalized_user_type = normalize_user_type(user_type)
     assistant_id = resolve_assistant_id(normalized_user_type)
     user_prompt = build_fuelix_user_prompt(user_query, normalized_user_type, lang, history)
+    # Override only this run, preserving the remote corpus and audience safeguards. This
+    # makes presentation updates effective on deployment without mutating shared assistants.
+    published_instructions = _assistant_instructions(assistant_id, int(time.monotonic() // 300))
+    presentation = build_response_presentation_directive(normalized_user_type)
+    run_instructions = (
+        published_instructions if presentation in published_instructions
+        else published_instructions + "\n\n" + presentation
+    )
 
     run_timeout_seconds = int(os.getenv("FUELIX_RUN_TIMEOUT_SECONDS", "240"))
 
@@ -433,6 +422,7 @@ def generate_fuelix_answer(
             assistant_id,
             user_prompt,
             timeout_seconds=max(1, int(min(run_timeout_seconds, remaining))),
+            instructions=run_instructions,
         )
         if result["answer"]:
             break
@@ -476,6 +466,7 @@ def generate_fuelix_answer(
                 " | ".join(item[:120] for item in scrubbed_resources),
             )
 
+    answer = format_response(answer, normalized_user_type, lang)
     elapsed_ms = int((time.perf_counter() - started) * 1000)
     return {
         "answer": answer,

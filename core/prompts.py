@@ -5,6 +5,7 @@ from core.audience import (
     detect_content_triggers,
     is_clinical_audience,
 )
+from core.response_format import build_response_presentation_directive
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -27,7 +28,7 @@ LANG_NAMES = {"en": "English", "fr": "French"}
 CANONICAL_HEADINGS = {
     "en": (
         "**Summary:**",
-        "**Living Guidelines Recommendations:**",
+        "**Living Guideline Recommendations:**",
         "**Information From the Literature:**",
     ),
     "fr": (
@@ -97,7 +98,7 @@ def _build_response_mode_directive():
 
     This sits ABOVE the headings block and the three-section rules on purpose. Those rules
     read as unconditional, so without an explicit gate in front of them a "hi" comes back
-    with "**Summary:** ... **Living Guidelines Recommendations:** ...".
+    with "**Summary:** ... **Living Guideline Recommendations:** ...".
     """
     return """RESPONSE MODE — decide this BEFORE anything else, and let it govern the entire
 response shape. There are exactly two modes.
@@ -119,7 +120,7 @@ CONVERSATIONAL mode — use it when the user's message is any of:
     - For an unrelated topic, say:
         - English: "I can only answer medical questions related to concussion based on the living guideline recommendations"
         - French: "Je ne peux répondre qu'à des questions médicales sur les commotions cérébrales, à partir des recommandations des lignes directrices évolutives."
-    - Then STOP. Nothing else in this prompt about sections or headings applies.
+    - Finish with the audience-specific disclaimer. Nothing else about guideline sections applies.
 
 GUIDELINE mode — use it for every genuine question about concussion or health. This is the
   only mode in which the three-section format below applies.
@@ -172,7 +173,7 @@ def _build_clinical_mandatory_directive():
     """Rules 1 and 4 — healthcare professionals only.
 
     Both fire on the same trigger (diagnosis / initial medical assessment / acute management)
-    and both land in the Living Guidelines Recommendations section, so they are written as one
+    and both land in the Living Guideline Recommendations section, so they are written as one
     block. Recommendation numbers follow the Domain 2 listing in the corpus, where 2.1d is the
     risk-score recommendation; a few older cross-references elsewhere in the corpus call the
     same content "2.1b", which is the numbering drift these fixed citations are meant to stop.
@@ -183,7 +184,7 @@ TRIGGER: the question concerns diagnosis, initial medical assessment, or acute c
 management. Read the trigger generously — "how do I assess", "what should I do for a patient
 who just hit their head", "how is concussion diagnosed", "what is the workup" all count.
 
-When it fires, the "Living Guidelines Recommendations" section MUST cover ALL of the following.
+When it fires, the "Living Guideline Recommendations" section MUST cover ALL of the following.
 Do not drop an item because the question was narrow, and do not merge them into one sentence.
 Cite each recommendation in-text with its number and level of evidence, and put each tool's
 link immediately after the tool is named.
@@ -394,18 +395,18 @@ def _build_generator_prompt(question_context, user_type, lang=None, recommendati
 
 In GUIDELINE mode ONLY, the answer has three sections, in this order, each introduced by its exact heading from above. In CONVERSATIONAL mode you write none of them:
 1. Summary section — provide a very concise direct response.
-2. Living Guidelines Recommendations section — elaborate based on two things: the living guidelines recommendations (below) and the Living guideline tools in the "Living guideline tools" vector store.
-3. Information From the Literature section — use the vector store called "Key papers to include" to retrieve additional relevant information to the question. Use APA 7 in-text citations in this part. If there is no relevant information in the files, skip this section entirely.
+2. Living Guideline Recommendations section — elaborate based on two things: the living guideline recommendations (below) and the Living guideline tools in the "Living guideline tools" vector store.
+3. Information From the Literature section — retrieve additional relevant information from the available knowledge base. Follow the audience-specific citation rules below. If there is no relevant information in the files, skip this section entirely.
 
 Follow these rules:
-- When you mention a recommendation or a paper, refernece it in-text. And don`t use links to reference.
 - When you reference recommendations, include their level of evidence if they have one. 
-- Everytime a tool is mentioned, include its link right after the mention. 
-- In the "Information From the Literature" section, stick to the APA 7 citation style.
+- Use the response presentation rules below for links, full references, and footer placement.
+
+{build_response_presentation_directive(user_type)}
 
 {mandatory_directive}
 
-Living Guidelines Recommendations:"{recommendations_markdown}"
+Living Guideline Recommendations:"{recommendations_markdown}"
     """
 
 
@@ -444,7 +445,7 @@ def _build_trigger_reminder(query, user_type):
             "acute management. Your MANDATORY CLINICAL CONTENT block applies — cover all seven "
             "core diagnostic recommendations AND include the separate paragraph on risk of "
             "prolonged recovery with the 5P Risk Calculator link, both inside the Living "
-            "Guidelines Recommendations section.\n"
+            "Guideline Recommendations section.\n"
         )
 
     return (

@@ -15,12 +15,15 @@ SUPPORTED_LANGS = {"en", "fr"}
 # preserve-proper-nouns rule below, leaves it in English inside a French heading — producing
 # "Recommandations des Living Guidelines".
 GLOSSARY = [
+    ("Living Guideline Recommendations", "Recommandations des lignes directrices évolutives"),
     ("Living Guidelines Recommendations", "Recommandations des lignes directrices évolutives"),
     ("Living Guideline for Pediatric Concussion", "lignes directrices évolutives sur les commotions cérébrales pédiatriques"),
     ("Living Guidelines", "lignes directrices évolutives"),
     ("Living Guideline", "lignes directrices évolutives"),
     ("Summary", "Résumé"),
     ("Information From the Literature", "Informations tirées de la littérature"),
+    ("Sources", "Sources"),
+    ("Level of Evidence legend", "Légende des niveaux de preuve"),
 ]
 
 
@@ -79,6 +82,7 @@ def _build_translation_messages(texts: List[str], target_lang: Optional[str]) ->
         f"{target_clause}\n"
         "Rules:\n"
         "- Preserve Markdown structure exactly: headings, **bold**, lists, tables, blockquotes, and line breaks.\n"
+        "- Preserve the footer order: Sources, evidence legend when present, then the disclaimer as the final line. Keep full bibliographic references and DOI links intact.\n"
         "- Keep links and URLs unchanged. Keep proper nouns, author names, in-text citation keys "
         "(e.g. (Smith et al., 2020)), and tool names unchanged — EXCEPT for the glossary terms below.\n"
         "- Translate the meaning faithfully and naturally. Do NOT add, remove, summarize, explain, or answer anything.\n"

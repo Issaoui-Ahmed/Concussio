@@ -11,6 +11,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from api import admin_access
 from core import research_log
 from core.fuelix_chat import generate_fuelix_answer, normalize_user_type
+from core.response_format import format_response
 from core.routing import (
     CANNED_INTENTS,
     canned_reply,
@@ -64,7 +65,7 @@ def _answer(request: ChatRequest) -> Dict[str, Any]:
     intent = detect_simple_intent(user_text, prior_turns)
     if intent in CANNED_INTENTS:
         return {
-            "answer": canned_reply(intent, lang, user_type),
+            "answer": format_response(canned_reply(intent, lang, user_type) or "", user_type, lang),
             "mode": "fuelix",
             "routed": intent,
         }
@@ -72,7 +73,7 @@ def _answer(request: ChatRequest) -> Dict[str, Any]:
         smalltalk_answer = generate_smalltalk_reply(user_text, user_type, lang)
         if smalltalk_answer:
             return {
-                "answer": smalltalk_answer,
+                "answer": format_response(smalltalk_answer, user_type, lang),
                 "mode": "fuelix",
                 "routed": "smalltalk",
             }

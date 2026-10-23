@@ -13,7 +13,7 @@ those lines and then not repeat them is precisely the instruction that was alrea
 followed inconsistently.
 
 Scope note: this strips named clinician TOOLS, not guideline references. Deep links into
-`/domain/N/#rec-NNN` stay, because every audience gets a "Living Guidelines Recommendations"
+`/domain/N/#rec-NNN` stay, because every audience gets a "Living Guideline Recommendations"
 section and stripping the recommendations out of it would break the answer format.
 """
 
